@@ -1,0 +1,10 @@
+[workspace]
+restore_data_on_startup = True
+save_data_on_exit = True
+save_history = True
+save_non_project_files = False
+
+[main]
+version = 0.2.0
+recent_files = ['main.py', 'run_predictor_sample.py', 'BayesianSearch.py', 'preprocessing.py', 'manual_version_old.py', 'C:\\Users\\kampaimaging\\.spyder-py3\\autosave\\main.py', 'C:\\Users\\kampaimaging\\.spyder-py3\\autosave\\run_predictor_sample.py']
+
