@@ -4,7 +4,7 @@ from preprocessing import merge_frames, preprocess_frame, get_n_spikes
 from run_predictor_sample import run_predictor
 
 #%% Give your kilosort output here
-test1 = r'G:\test_outputs_repo\RD10_2129_20210112_g0_t0_imec0\imec0_ks2'
+test1 = r'D:\repo_data\imec0_ks2'
 
 #%%
 # data preprocessing
@@ -27,7 +27,7 @@ for key, frame in frames.items():
     print(frame.columns)
     frames[key]=preprocess_frame(frame)
     
-    
-#calling_predictor    
-    
-run_predictor(frames[0])
+   
+if __name__ == '__main__':
+    #calling_predictor    
+    run_predictor(frames[0])

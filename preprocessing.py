@@ -49,7 +49,7 @@ import plotly.io as pio
 
 import seaborn as sns
 import umap
-import hdbscan
+#import hdbscan
 
 from mlxtend.plotting import plot_decision_regions
 
@@ -85,7 +85,7 @@ def merge_frames(paths_all):
                 
     # 2. merge the dataframes
     for key in frames:
-        print(key, '->', frames[key])
+        #print(key, '->', frames[key])
         frame = frames[key][0]
         for merge_frame in frames[key][1:]:
             frame = frame.merge(merge_frame, on="cluster_id")
