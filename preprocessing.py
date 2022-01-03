@@ -139,7 +139,7 @@ def preprocess_frame(frame):
     
     return(frame)
 
-# function for n_spikes cell3
+# function for n_spikes by Thomas Rueland
 def get_n_spikes(kilosort_output_folder, total_units):
     
     spike_clusters = np.load(os.path.join(kilosort_output_folder, 'spike_clusters.npy'))
