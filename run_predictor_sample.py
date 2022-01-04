@@ -13,7 +13,8 @@ from preprocessing import merge_frames, preprocess_frame,get_n_spikes,create_pre
 from BayesianSearch import run_search
 import pickle
 import umap
-
+from mlxtend.plotting import plot_decision_regions
+import matplotlib.pyplot as plt
 #%% load path cell1
 
 def train_best_estimator(preprocessing_pipeline,X,y):
@@ -61,11 +62,18 @@ def run_predictor(test_dataframe):
     #X_test_final = pipeline.transform(X_unseen)
     X_test_trans = pipeline.transform(X_unseen) #to impute and normalise
     X_test_final = umap_embedder.transform(X_test_trans)
-    
     y_pred = clf.predict(X_test_final) #for every row 
     test_dataframe['is_noise']=y_pred
+    print(X_test_final.shape)
+    print(y_pred.shape)
+    fig = plot_decision_regions(X=X_test_final, y=y_pred, clf=clf, legend=2)
+    plt.savefig('decision-boundry.png')
+    
+    
+    
     
     return test_dataframe['is_noise']
+
 
 #%%
 if __name__=='main':

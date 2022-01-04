@@ -60,15 +60,6 @@ from sklearn.pipeline import Pipeline
 
 import umap
 
-# load path cell1
-# test1 = r'Y:\invivo_ephys\Neuropixels\RD10_2129_20210112\RD10_2129_20210112_g0\RD10_2129_20210112_g0_imec0\RD10_2129_20210112_g0_t0_imec0\imec0_ks2'
-# test2 = r'Y:\invivo_ephys\Neuropixels\RD10_2130_20210119\RD10_2130_20210119_g0\RD10_2130_20210119_g0_imec0\RD10_2130_20210119_g0_t0_imec0\imec0_ks2'
-
-# kilosort_output_folder =[ 
-#            #unseen
-#            test1,test2
-#            ]
-
 
 #1. Combine csv and tsv files 
 def merge_frames(paths_all):
@@ -101,7 +92,7 @@ def merge_frames(paths_all):
 
 def preprocess_frame(frame):
     enc = LabelEncoder()
-    print(frame.columns)
+    #print(frame.columns)
     #frame['label'] = frame['label'].fillna(-1)
     frame['d_prime']= frame['d_prime'].fillna(frame['d_prime'].median())
     frame['Amplitude']= frame['Amplitude'].fillna(frame['Amplitude'].median())
@@ -132,9 +123,9 @@ def preprocess_frame(frame):
         frame.drop(['Var1'],axis = 1,inplace=True)
         
     frame['group'] = enc.fit_transform(frame['group'])
-    print(enc.inverse_transform( [0, 1,0]))
+    #print(enc.inverse_transform( [0, 1,0]))
     frame['KSLabel']= enc.fit_transform(frame['KSLabel'])
-    print(enc.inverse_transform([0, 1]))
+    #print(enc.inverse_transform([0, 1]))
     
     
     return(frame)
