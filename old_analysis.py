@@ -114,7 +114,12 @@ kilosort_output_folder =[ glbdmxCAR_2217_09 ,
 
 #%% #%% 
 #nr
+#focus_df.loc[focus_df['isi_viol'].between(-np.inf,0.5,inclusive=True)  &
+#            focus_df['amplitude_cutoff'].between(-np.inf,0.1,inclusive=True)
+#           ,'category']= "SUA"
 
+
+#%%
 
 data = [ pd.Series([347,625]),
          pd.Series([389,638]),
@@ -895,35 +900,6 @@ study = optuna.create_study(direction="maximize")
 study.optimize(objective, n_trials=100)
 print(study.best_trial)
     
-#%%
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 #%%
 noiseIdx = y_train == 1
@@ -1035,39 +1011,6 @@ plt.ylabel("UMAP 2")
 # plt.title('Embedded via UMAP predicting Labels');
 
 # plt.show()
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 

@@ -38,8 +38,7 @@ def train_best_estimator(preprocessing_pipeline,X,y):
     #import os
     #os.mkdir('./pipeline')
     
-    
-    
+
     pickle.dump(preprocessing_pipeline, open('preprocessing_pipeline.sav','wb'))
     pickle.dump(supervised_embedder, open('embedder.sav', 'wb'))
     pickle.dump(clf, open('classifier.sav', 'wb'))
