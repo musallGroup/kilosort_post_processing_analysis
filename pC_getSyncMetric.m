@@ -73,13 +73,14 @@ for x = 1: length(syncSpikesThresh)
         
         cSpikes = sp.clu == clustIDs(iClust); %spikes from current cluster
         syncMetric(iClust,x) = sum(cSpikes & cntSyncEvents >= syncSpikesThresh(x)) / sum(cSpikes); % regular sync metric (ratio of sync vs all spikes)
-        spaceSyncMetric(iClust,x) = nanmean(spaceSyncEvents(cSpikes & cntSyncEvents >= syncSpikesThresh(x)));  % spatially-corrected sync metric
-        farSyncMetric(iClust,x) = syncMetric(iClust,x) * spaceSyncMetric(iClust,x);  % emphasizes sync events with distant channels
-        nearSyncMetric(iClust,x) = syncMetric(iClust,x) * (1 - spaceSyncMetric(iClust,x));  % emphasizes sync events with closeby channels
-
+        if syncMetric(iClust,x) > 0
+            spaceSyncMetric(iClust,x) = nanmean(spaceSyncEvents(cSpikes & cntSyncEvents >= syncSpikesThresh(x)));  % spatially-corrected sync metric
+            farSyncMetric(iClust,x) = syncMetric(iClust,x) * spaceSyncMetric(iClust,x);  % emphasizes sync events with distant channels
+            nearSyncMetric(iClust,x) = syncMetric(iClust,x) * (1 - spaceSyncMetric(iClust,x));  % emphasizes sync events with closeby channels
+        end
     end
 end
-        
+
 %% check for csv file and add if possible
 metricFile = [myKsDir filesep metricFileName];
 if exist(metricFile, 'file')
@@ -107,7 +108,7 @@ for x = 1 : length(syncSpikesThresh)
         nFarSyncMetric(nClustIDs == clustIDs(iClust)) = farSyncMetric(iClust,x);
         nNearSyncMetric(nClustIDs == clustIDs(iClust)) = nearSyncMetric(iClust,x);
     end
-
+    
     T.(['syncSpike_' num2str(syncSpikesThresh(x))]) = nSyncMetric;
     T.(['syncSpace_' num2str(syncSpikesThresh(x))]) = nSpaceSyncMetric;
     T.(['farSyncSpike_' num2str(syncSpikesThresh(x))]) = nFarSyncMetric;
