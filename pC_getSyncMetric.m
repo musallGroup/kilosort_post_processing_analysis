@@ -56,7 +56,7 @@ for x = unique(syncDiff')
     cIdx = (syncOn(cIdx) + (0:x-1))'; %find onsets and add nr of sync spikes to the index
     cntSyncEvents(cIdx(:)) = x;
     
-    spaceSpread = nanstd(spikeDepths(cIdx)); %range of depths for each sync event
+    spaceSpread = nanvar(spikeDepths(cIdx)); %range of depths for each sync event
     spaceSpread = repmat(spaceSpread, x, 1); %repeat to match size of index
     spaceSyncEvents(cIdx(:)) = spaceSpread;
 end
