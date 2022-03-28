@@ -17,7 +17,7 @@ function [syncMetric, spaceSyncMetric, farSyncMetric, nearSyncMetric] = pC_getSy
 
 %input variables
 if ~exist('syncSpikesThresh', 'var') || isempty(syncSpikesThresh)
-    syncSpikesThresh = [2 4]; %nr of synchronous spikes that are used for the metric. Default is 2, 4, 6, 8 and 16.
+    syncSpikesThresh = [2 4 8]; %nr of synchronous spikes that are used for the metric. Default is 2, 4, 6, 8 and 16.
 end
 
 
