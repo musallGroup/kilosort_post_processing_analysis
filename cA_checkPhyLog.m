@@ -1,4 +1,4 @@
-function [isNoise, isMerge] = cA_checkPhyLog(cFolder)
+function [isNoise, isMerge, noiseStr, mergeStr] = cA_checkPhyLog(cFolder)
 
 
 %% get camlog file
@@ -25,7 +25,7 @@ while true
         noiseStr{end+1} = tline;
     end
     
-    if contains(tline, 'Merge')
+    if contains(tline, 'Merge clusters')
         startString = strfind(tline, 'Merge clusters ') + length('Merge clusters ');
         endString = strfind(tline, ' to ');
         val = textscan(tline(startString:endString), '%f%f%f%f%f%f%f', 'delimiter', ','); %find number of noise cluster
@@ -35,3 +35,8 @@ while true
     end
 end
 fclose(fid);
+
+%
+isNoise = unique(isNoise);
+isMerge = unique(isMerge);
+
