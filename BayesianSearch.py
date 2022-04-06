@@ -20,8 +20,7 @@ from sklearn.ensemble import RandomForestClassifier
 
 from mlxtend.plotting import plot_decision_regions
 from preprocessing import create_preprocessing_pipeline, preprocess_frame, get_groundTruth
-import umap
-
+import umap.umap_ as umap
 
 seed=1
 # CASH (Combined Algorithm Selection and Hyperparameter optimisation)
@@ -101,7 +100,7 @@ params = {
          }
 # run search with given dataset        
 def run_search(preprocessing_pipeline, X, y):
-    X_train, X_test, y_train, y_test = train_test_split(X, y)
+    X_train, X_test, y_train, y_test = train_test_split(X, y) #(train and validate on 75%, test on 25% of data)
 
     X_train_transform = preprocessing_pipeline.fit_transform(X_train)
     
@@ -131,7 +130,7 @@ def run_search(preprocessing_pipeline, X, y):
     for name in models:
         print(name)
         estimator = clfs[name]
-        clf = BayesSearchCV(estimator, params[name], scoring='accuracy', refit='True', n_jobs=-1, n_iter=20,cv=5)
+        clf = BayesSearchCV(estimator, params[name], scoring='accuracy', refit='True', n_jobs=-1, n_iter=20,cv=5) 
         clf.fit(X_train_final, y_train)   # X_train_final, y_train X is train samples and y is the corresponding labels
         
         print("best params: " + str(clf.best_params_)) # best paramters for each model 

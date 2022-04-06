@@ -45,7 +45,7 @@ def train_best_estimator(preprocessing_pipeline,X,y):
    
 def run_predictor(test_dataframe):
     
-    X_unseen = test_dataframe[[  'n_spike', 
+    X_unseen = test_dataframe[[ # 'n_spike', 
                              'syncSpike_2',
                              'syncSpike_4',
                               'firing_rate',
@@ -68,19 +68,16 @@ def run_predictor(test_dataframe):
     fig = plot_decision_regions(X=X_test_final, y=y_pred, clf=clf, legend=2)
     plt.savefig('decision-boundry.png')
     
-    
-    
-    
     return test_dataframe['is_noise']
 
 
 #%%
 if __name__=='main':
-    dataset = pd.read_csv(r'dataset\dataset.csv')
+    dataset = pd.read_csv(r'D:\dataset.csv')
     print(dataset.columns)
     print(dataset.shape)
       
-    metric_data = dataset[[      'n_spike', 
+    metric_data = dataset[[      #'n_spike', 
                                  'syncSpike_2',
                                  'syncSpike_4',
                                   'firing_rate',

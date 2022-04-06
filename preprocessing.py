@@ -62,34 +62,77 @@ import umap
 
 
 #1. Combine csv and tsv files 
-def merge_frames(paths_all):
+# def merge_frames(paths_all):
+#     frames = {}
+#     for i, path in enumerate(paths_all): #parse with indexing
+#         frames[i] = []
+#         for file in os.listdir(path):
+#             if ".tsv" in file:
+#                 frame = pd.read_csv(os.path.join(path, file), sep='\t')
+#                 frames[i].append(frame)
+#             elif ".csv" in file and 'merged_data_frames' not in file:
+#                 frame = pd.read_csv(os.path.join(path, file))
+#                 frames[i].append(frame)
+                
+#     # 2. merge the dataframes
+#     for key in frames:
+#         #print(key, '->', frames[key])
+#         frame = frames[key][0]
+#         for merge_frame in frames[key][1:]:
+#             frame = frame.merge(merge_frame, on="cluster_id")
+#         frames[key] = frame
+    
+#     # 3. write into a file
+#     for i, path in enumerate(paths_all):
+#         frames[i].to_csv(os.path.join(path, 'merged_data_frames.csv'))
+#     return frames
+
+def merge_frames(paths_all, useMetrics):
     frames = {}
+    missedMetrics = {}
     for i, path in enumerate(paths_all): #parse with indexing
-        frames[i] = []
+        
+        recFrames = []
+        searchMetrics = useMetrics
+        
         for file in os.listdir(path):
+            
+            frame = []
             if ".tsv" in file:
                 frame = pd.read_csv(os.path.join(path, file), sep='\t')
-                frames[i].append(frame)
-            elif ".csv" in file and 'merged_data_frames' not in file:
-                frame = pd.read_csv(os.path.join(path, file))
-                frames[i].append(frame)
                 
-    # 2. merge the dataframes
-    for key in frames:
-        #print(key, '->', frames[key])
-        frame = frames[key][0]
-        for merge_frame in frames[key][1:]:
-            frame = frame.merge(merge_frame, on="cluster_id")
-        frames[key] = frame
-    
-    # 3. write into a file
-    for i, path in enumerate(paths_all):
-        frames[i].to_csv(os.path.join(path, 'merged_data_frames.csv'))
-    return frames
+            elif ".csv" in file:
+                frame = pd.read_csv(os.path.join(path, file))
+
+            if len(frame) > 0:
+                foundMetrics = set(searchMetrics) & set(list(frame.columns))
+                
+                if len(foundMetrics) > 0:
+                    print('================')
+                    print('Found target metrics:')
+                    print(foundMetrics)
+                    print('in file:')
+                    print(file)
+                    
+                if len(foundMetrics) > 0:
+                    frame = frame[frame.columns.intersection(foundMetrics)]
+                    searchMetrics = set(searchMetrics).symmetric_difference(foundMetrics)
+                else:
+                    frame = []
+                
+            if len(frame) > 0 :  
+                if len(recFrames) == 0:
+                    recFrames = frame
+                else:
+                    recFrames = pd.concat([recFrames,frame],axis = 1)
+                 
+        frames[i] = recFrames
+        missedMetrics[i] = searchMetrics
+        
+    return frames, missedMetrics
 
 
 # 4. cleaned datasets : all non-useful features are dropped andchange categorical into integer
-
 def preprocess_frame(frame):
     enc = LabelEncoder()
     #print(frame.columns)
