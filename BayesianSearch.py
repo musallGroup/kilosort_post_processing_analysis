@@ -3,24 +3,23 @@ from sklearn.ensemble import GradientBoostingClassifier
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.svm import SVC
-#from sklearn.linear_model import LogisticRegression
 from sklearn.model_selection import GridSearchCV
 from sklearn.metrics import accuracy_score, log_loss
 from sklearn.neural_network import MLPClassifier 
-
 from sklearn.ensemble import ExtraTreesClassifier
 from xgboost import XGBClassifier
 import lightgbm 
 from lightgbm import LGBMRegressor, LGBMClassifier, Booster
 from skopt import BayesSearchCV
 import matplotlib.pyplot as plt
-import pandas as pd
 from sklearn.model_selection import train_test_split
 from sklearn.ensemble import RandomForestClassifier
-
 from mlxtend.plotting import plot_decision_regions
-from preprocessing import create_preprocessing_pipeline, preprocess_frame, get_groundTruth
 import umap.umap_ as umap
+import pickle
+import json
+import os
+import inspect
 
 seed=1
 # CASH (Combined Algorithm Selection and Hyperparameter optimisation)
@@ -100,8 +99,9 @@ params = {
          }
 # run search with given dataset        
 def run_search(preprocessing_pipeline, X, y):
-    X_train, X_test, y_train, y_test = train_test_split(X, y) #(train and validate on 75%, test on 25% of data)
+    print('performing bayesian search for best classifier')
 
+    X_train, X_test, y_train, y_test = train_test_split(X, y) #(train and validate on 75%, test on 25% of data)
     X_train_transform = preprocessing_pipeline.fit_transform(X_train)
     
     supervised_embedder = umap.UMAP(
@@ -113,14 +113,11 @@ def run_search(preprocessing_pipeline, X, y):
     X_test_trans = preprocessing_pipeline.transform(X_test) #to impute and normalise
     X_test_final = supervised_embedder.transform(X_test_trans)
 
-    import pickle
+    usedMetrics = list(X.columns)
+    cPath = os.path.dirname(inspect.getfile(run_search)); # find directory of this function and save pickle files there
+    pickle.dump([supervised_embedder, usedMetrics], open(cPath + '\crossVal_embedder.sav', 'wb'))
 
-    #f_name = 'supervised_embedder.sav'
-    pickle.dump(supervised_embedder, open('supervised_embedder.sav', 'wb'))
-
-# time passes
-
-
+    # time passes
     test_scores = []
     val_scores =[]
     search_objects=[]
@@ -144,7 +141,6 @@ def run_search(preprocessing_pipeline, X, y):
         plt.title(f'Decison boundary of {name} on clusters');
         plt.show()
         
-        
         clfscore=clf.score(X_test_final, y_test) # X_test_final, y_test
         test_scores.append(clfscore)
     
@@ -152,13 +148,13 @@ def run_search(preprocessing_pipeline, X, y):
     max_index = val_scores.index(max_value)
     best_config = best_configs[max_index]    
     estimator=models[max_index]
+    
     # save incumbent(best) config 
     incumbent_config= {
         'estimator': estimator, 
         'params' : best_config
     }
-    print("best_config with Configuration is ", incumbent_config)
     
-    import json
-    json.dump(incumbent_config, open('incumbent_config.json', 'w'))
+    print("best_config with Configuration is ", incumbent_config)
+    json.dump(incumbent_config, open(cPath + '\incumbent_config.json', 'w'))
     

@@ -13,7 +13,7 @@ from utils import load_kilosort_data
 from metrics import calculate_metrics
 from id_noise_templates import id_noise_templates
 from preprocessing import merge_frames, preprocess_frame, get_n_spikes
-from run_predictor_sample import run_predictor
+from run_predictor_sample import run_predictor, identify_best_estimator
 import seaborn as sns
 import matplotlib.pyplot as plt
 
@@ -30,6 +30,7 @@ import params
 
 start = time.time()
 
+#%% load spike data
 print("Loading data...")
 
 spike_times, spike_clusters, spike_templates, amplitudes, templates, channel_map, clusterIDs, cluster_quality, pc_features, pc_feature_ind = \
@@ -66,7 +67,6 @@ df.to_csv(fPath + r'\noiseModule.csv')
 
 
 #%% run noise decoder and save output
-
 # make sure this includes cluster_id
 baseParams.useNoiseMetrics.append('cluster_id')
 baseParams.useNoiseMetrics = list(set(baseParams.useNoiseMetrics))
@@ -83,32 +83,21 @@ df.to_csv(fPath + r'\noiseClassifier.csv')
 
 
 
+
+
+
+#%% load ground truth from Phy labels and retrain classifier
+
+gTruth = merge_frames([fPath], ['group']) # get metrics from recording
+a = pd.get_dummies(gTruth[0][0]['group'])
+frames[0][0]['gTruth'] = a['noise']
+
+identify_best_estimator(frames[0][0], baseParams.useNoiseMetrics) # re-train classifier
+
+  run_predictor(frames[0][0]) # test classifier
+  
+    
 #%%
-frame_metrics=[]
-
-# files that can metrics of interest 
-files = ['cluster_Amplitude.tsv', 'cluster_ContamPct.tsv', 'metrics.csv']
-
-# find those files
-def find(name,path):
-    for root,dirs,files in os.walk(path):
-        if name in files:
-            return os.path.join(root,name)
-
-#saving file paths
-frame_metrics = []
-for file in files:
-    frame_metrics.append(find(file,fPath))
-
-useNoiseMetrics = ['firing_rate',  'presence_ratio', 'isi_viol', 'amplitude_cutoff',
-                   'isolation_distance', 'l_ratio' , 'd_prime','nn_hit_rate',
-                   'nn_miss_rate', 'silhouette_score', 'max_drift',   'cumulative_drift' ,
-                   'syncSpike_2', 'syncSpike_4', ]
-
-#finding baseparames and saving them in dataframe
-QM_features = pd.read_csv(frame_metrics[2],usecols = useNoiseMetrics)
-
-
 
 
 
@@ -122,43 +111,3 @@ QM_features = pd.read_csv(frame_metrics[2],usecols = useNoiseMetrics)
                 
              
 
-
-
-
-
-
-for path in kilosort_output_folder:
-    frame_metrics.append(pd.read_csv(os.path.join(path, "metrics.csv"), index_col = 0))
-
-n_spikes_per_clusters=[]
-for path,metric in zip(kilosort_output_folder, frame_metrics):
-    n_spikes_per_clusters.append( get_n_spikes(path, total_units=len(metric)))
-
-for (key, frame), spike in zip(frames.items(), n_spikes_per_clusters):
-    frame['n_spike'] = spike
-
-
-for key, frame in frames.items():
-    print(frame.columns)
-    frames[key]=preprocess_frame(frame)
-    
- #calling_predictor    
-if __name__ == '__main__':
-      
-    run_predictor(frames[0][0])
-    
-    
-#%% Categorise into SUA, MUA and Noise
-focus_df = frames[0].copy()
-focus_mask = (focus_df['isi_viol'] <= 0.5) & (focus_df['amplitude_cutoff'] <= 0.1)
-not_noisy_mask = (focus_df['is_noise'] ==0)
-focus_df.loc[(not_noisy_mask & focus_mask), 'category'] = "SUA"
-focus_df.loc[(not_noisy_mask & ~focus_mask), 'category'] = "MUA"
-focus_df.loc[~not_noisy_mask, 'category'] = "noise"
-
-
-
-
-
-
-    
