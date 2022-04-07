@@ -1,1 +1,1 @@
-{"estimator": "KNeighborsClassifier", "params": {"leaf_size": 30, "n_neighbors": 22, "weights": "distance"}}
+{"estimator": "AdaBoostClassifier", "params": {"algorithm": "SAMME", "learning_rate": 1, "n_estimators": 73}}
