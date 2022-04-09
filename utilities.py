@@ -53,6 +53,17 @@ def plot_confusion_matrix(frame):
     
     print("Precion is ",tp / (tp + fp))
 
+# from sklearn.metrics import confusion_matrix, ConfusionMatrixDisplay
+# cm = confusion_matrix(y_test, y_pred, labels=clf.classes_)
+# ax= plt.subplot()
+# sns.heatmap(cm, annot=True, fmt='g', ax=ax,cmap='Blues');  #annot=True to annotate cells, ftm='g' to disable scientific notation
+# # labels, title and ticks
+# ax.set_xlabel('Predicted labels');ax.set_ylabel('True labels'); 
+# ax.set_title('Confusion Matrix from classifier (SUA)'); 
+# ax.xaxis.set_ticklabels(['others', 'SUA']); ax.yaxis.set_ticklabels(['others', 'SUA']);
+# plt.savefig('Confusion Matrix from classifier (SUA).pdf') 
+# plt.show()
+
 def get_n_spikes(kilosort_output_folder):
     
     spike_times = np.load(os.path.join(kilosort_output_folder, 'spike_times.npy'))
@@ -132,25 +143,63 @@ def merge_frames(paths_all):
         frames[i].to_csv(os.path.join(path, 'merged_data_frames.csv'))
     return frames
 
-def plot_roc_curve(frame):
-    plt.figure(figsize=(14,10),dpi=640)
-    actual1= frame['LABEL']
-    prediction1=frame['syncSpike_2']
-    fpr, tpr, thresholds = metrics.roc_curve(actual1,prediction1,pos_label=0)
-    #fpr, tpr, thresholds = metrics.roc_curve(actual1,prediction1, pos_label=0) for firing_rate
-    #auc1 = auc(fpr,tpr)
-    roc_auc = metrics.auc(fpr, tpr)
 
-    #plt.plot(fpr, tpr,label="AUC prediction:{0}".format(roc_auc),color='red', linewidth=2)
-    plt.title('syncSpike_4',fontsize=40)
-    plt.plot(fpr, tpr, 'b', label = 'AUC = %0.2f' % roc_auc)
-    plt.legend(loc = 'lower right',fontsize=40)
-    plt.plot([0, 1], [0, 1],'r--')
-    plt.xlim([0, 1])
-    plt.ylim([0, 1])
-    plt.ylabel('True Positive Rate',fontsize=30)
-    plt.xlabel('False Positive Rate',fontsize=30)
+def plot_roc_curve(fPath, frame, gTruth):
+    
+
+    """
+    Use : Find the metrics that can help identify noise. 
+
+    Inputs:
+    -------
+    fPath : Output to Kilosort Directory 
+    frame : Dataframe with all the quality metrics
+    gTruth : Manual label 
+    
+
+    Outputs:
+    -------
+    df_auc : data frame with AUC values for each metric 
+    
+    """
+    plt.figure(figsize=(14,10),dpi=640)    
+    
+    a = pd.get_dummies(gTruth[0][0]['group'])
+    frame[0][0]['gTruth'] = a['noise']  
+    frame[0][0] = frame[0][0].fillna(frame[0][0].median())
+    print(frame[0][0].isnull().sum())  # use this to find feature columns that can have nans
+    roc_aucs = []
+    for column in frame[0][0].columns:
+        actual1=frame[0][0]['gTruth']
+        prediction1= frame[0][0][column]
+        fpr, tpr, thresholds = metrics.roc_curve(actual1,prediction1)
+        #fpr, tpr, thresholds = metrics.roc_curve(actual1,prediction1, pos_label=0) for firing_rate
+        #auc1 = auc(fpr,tpr)
+        roc_auc = metrics.auc(fpr, tpr)
+        roc_aucs.append(roc_auc)
+     
+        #plt.plot(fpr, tpr,label="AUC prediction:{0}".format(roc_auc),color='red', linewidth=2)
+        plt.title(column,fontsize=40)
+        plt.plot(fpr, tpr, 'b', label = 'AUC = %0.2f' % roc_auc)
+        plt.legend(loc = 'lower right',fontsize=40)
+        plt.plot([0, 1], [0, 1],'r--')
+        plt.xlim([0, 1])
+        plt.ylim([0, 1])
+        plt.ylabel('True Positive Rate',fontsize=30)
+        plt.xlabel('False Positive Rate',fontsize=30)
+        plt.show()
+
+    metric_col = list(frame[0][0].columns)
+    L = [list(row) for row in zip(metric_col, roc_aucs)]
+    df_auc = pd.DataFrame(L, columns=['metric', 'roc_auc'])
+    values = ['cluster_id', 'gTruth']
+    df_auc = df_auc[df_auc.metric.isin(values) == False]
+    #sorted_index = df_auc.mean().sort_values().index
+    #df_sorted=df_auc[sorted_index]
+    #sns.barplot(data=df_sorted, orient='h')
+    ax = df_auc.plot.barh(x='metric', y='roc_auc', rot=0)
     plt.show()
+    return df_auc
 
 def plot_umap_embedding(X, y, title):
     fig, ax = plt.subplots()
