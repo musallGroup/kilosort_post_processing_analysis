@@ -98,7 +98,7 @@ params = {
     
          }
 # run search with given dataset        
-def run_search(preprocessing_pipeline, X, y):
+def run_search(preprocessing_pipeline, X, y, classifierPath):
     print('performing bayesian search for best classifier')
 
     X_train, X_test, y_train, y_test = train_test_split(X, y) #(train and validate on 75%, test on 25% of data)
@@ -114,8 +114,8 @@ def run_search(preprocessing_pipeline, X, y):
     X_test_final = supervised_embedder.transform(X_test_trans)
 
     usedMetrics = list(X.columns)
-    cPath = os.path.dirname(inspect.getfile(run_search)); # find directory of this function and save pickle files there
-    pickle.dump([supervised_embedder, usedMetrics], open(cPath + '\crossVal_embedder.sav', 'wb'))
+    # cPath = os.path.dirname(inspect.getfile(run_search)); # find directory of this function and save pickle files there
+    pickle.dump([supervised_embedder, usedMetrics], open(classifierPath + '\crossVal_embedder.sav', 'wb'))
 
     # time passes
     test_scores = []
@@ -156,5 +156,5 @@ def run_search(preprocessing_pipeline, X, y):
     }
     
     print("best_config with Configuration is ", incumbent_config)
-    json.dump(incumbent_config, open(cPath + '\incumbent_config.json', 'w'))
+    json.dump(incumbent_config, open(classifierPath + '\incumbent_config.json', 'w'))
     

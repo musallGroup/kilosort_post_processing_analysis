@@ -13,10 +13,11 @@ from mlxtend.plotting import plot_decision_regions
 import matplotlib.pyplot as plt
 import json
 import inspect
+import numpy as np
 
 #%% load path cell1
 
-def train_best_estimator(preprocessing_pipeline,X,y):
+def train_best_estimator(preprocessing_pipeline,X,y, classifierPath):
 # this uses the classifier that has been previously identified as performing
 # best and fits it to a new supervised UMAP projection based on X and y.
 
@@ -35,27 +36,27 @@ def train_best_estimator(preprocessing_pipeline,X,y):
     X_train_transform = preprocessing_pipeline.fit_transform(X)
     X_train_final = supervised_embedder.fit_transform(X_train_transform, y)
     
-    cPath = os.path.dirname(inspect.getfile(train_best_estimator)); # find directory of this function and save pickle files there
-    config = json.load(open(cPath + '\incumbent_config.json'))
+    # cPath = os.path.dirname(inspect.getfile(train_best_estimator)); # find directory of this function and save pickle files there
+    config = json.load(open(classifierPath + '\incumbent_config.json'))
     clf = clfs[config['estimator']]
     params = config['params']
     clf.set_params(**params)
     clf.fit(X_train_final,y)
     
     
-    pickle.dump(preprocessing_pipeline, open(cPath + '\preprocessing_pipeline.sav','wb'))
-    pickle.dump([supervised_embedder, usedMetrics], open(cPath + '\embedder.sav','wb'))
-    pickle.dump(clf, open(cPath + '\classifier.sav', 'wb'))
+    pickle.dump(preprocessing_pipeline, open(classifierPath + '\preprocessing_pipeline.sav','wb'))
+    pickle.dump([supervised_embedder, usedMetrics], open(classifierPath + '\embedder.sav','wb'))
+    pickle.dump(clf, open(classifierPath + '\classifier.sav', 'wb'))
    
     
-def run_predictor(test_dataframe):
+def run_predictor(test_dataframe, classifierPath):
 # This applies the decoder to a given data table. Needs to include the metrics
 # that the classifier was trained on.
 
-    cPath = os.path.dirname(inspect.getfile(run_predictor)); # find directory of this function and save pickle files there
-    clf = pickle.load(open(cPath + '\classifier.sav', 'rb'))
-    pipeline =  pickle.load(open(cPath + '\preprocessing_pipeline.sav', 'rb'))
-    embeder = pickle.load(open(cPath + '\embedder.sav', 'rb'))
+    # cPath = os.path.dirname(inspect.getfile(run_predictor)); # find directory of this function and save pickle files there
+    clf = pickle.load(open(classifierPath + '\classifier.sav', 'rb'))
+    pipeline =  pickle.load(open(classifierPath + '\preprocessing_pipeline.sav', 'rb'))
+    embeder = pickle.load(open(classifierPath + '\embedder.sav', 'rb'))
     umap_embedder = embeder[0]
     usedMetrics = embeder[1]
     
@@ -75,12 +76,53 @@ def run_predictor(test_dataframe):
     y_pred = clf.predict(X_test_final) #for every row 
     test_dataframe['is_noise']=y_pred
     fig = plot_decision_regions(X=X_test_final, y=y_pred, clf=clf, legend=2)
-    plt.savefig('decision-boundary.png')
+    # plt.savefig('decision-boundary.png')
+    plt.show()
     
     return test_dataframe['is_noise']
 
+def test_predictor(test_dataframe, classifierPath):
+# This tests  the decoder to a given data table that has human labels. 
+# Needs to include the metrics that the classifier was trained on.
 
-def identify_best_estimator(dataset, metrics):
+    # cPath = os.path.dirname(inspect.getfile(run_predictor)); # find directory of this function and save pickle files there
+    clf = pickle.load(open(classifierPath + '\classifier.sav', 'rb'))
+    pipeline =  pickle.load(open(classifierPath + '\preprocessing_pipeline.sav', 'rb'))
+    embeder = pickle.load(open(classifierPath + '\embedder.sav', 'rb'))
+    umap_embedder = embeder[0]
+    usedMetrics = embeder[1]
+    
+    # check if all metrics are present
+    foundMetrics = set(usedMetrics) & set(list(test_dataframe.columns))
+    if len(foundMetrics) != len(usedMetrics):
+        print('Missing metrics in dataset:')
+        print(set(test_dataframe.columns).symmetric_difference(set(usedMetrics)))
+        raise ValueError('!! Columns in test dataset do not contain all required metrics !!')
+        
+    
+    X_unseen = test_dataframe[usedMetrics]    
+    X_test_trans = pipeline.transform(X_unseen) #to impute and normalise
+    X_test_final = umap_embedder.transform(X_test_trans)
+    
+    y_pred = clf.predict(X_test_final) #for every row 
+    test_dataframe['is_noise']=y_pred
+    
+    fig = plot_decision_regions(X=X_test_final, y=test_dataframe['gTruth'].to_numpy(), clf=clf, legend=2)
+    # plt.savefig('decision-boundary.png')
+    plt.show()
+    
+    #hit rate (percent recognized noise clusters)    
+    cIdx = test_dataframe['gTruth'] == 1
+    print('HitRate for noise clusters: ' + str(np.round(np.sum(test_dataframe['is_noise'][cIdx]) / np.sum(cIdx),2)))
+ 
+    #false alarm rate (percent falsely labeled neural clusters)    
+    cIdx = test_dataframe['gTruth'] == 0
+    print('FalseAlarmRate for noise clusters: ' + str(np.round(np.sum(test_dataframe['is_noise'][cIdx]) / np.sum(cIdx),2)))
+            
+    return test_dataframe['is_noise']
+
+
+def identify_best_estimator(dataset, metrics, classifierPath):
 # this performs a new bayesian search to identify the best classifier in UMAP
 # space. This is useful when retraining on a new flavor of data.
 
@@ -98,9 +140,12 @@ def identify_best_estimator(dataset, metrics):
     if len(set(X.columns).intersection(set(['cluster_id']))) > 0:
         del X['cluster_id']
         
+    if os.path.isdir(classifierPath) == False:
+        os.mkdir(classifierPath)
+            
     preprocessing_pipeline = create_preprocessing_pipeline()
-    run_search(preprocessing_pipeline, X, y) # call function 
-    train_best_estimator(preprocessing_pipeline,X,y)
+    run_search(preprocessing_pipeline, X, y, classifierPath) # call function 
+    train_best_estimator(preprocessing_pipeline,X,y, classifierPath)
 
 
 #%%

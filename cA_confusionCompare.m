@@ -1,4 +1,7 @@
-myKsDir = 'Z:\invivo_ephys\SharedEphys\FromSylvia\SS088_2018-01-30_K1\SS088_2018-01-30_K1_g0\SS088_2018-01-30_K1_g0_imec0\SS088_2018-01-30_K1_g0_t0_imec\imec_ks2\';
+% myKsDir = 'Z:\invivo_ephys\SharedEphys\FromSylvia\SS088_2018-01-30_K1\SS088_2018-01-30_K1_g0\SS088_2018-01-30_K1_g0_imec0\SS088_2018-01-30_K1_g0_t0_imec\imec_ks2\';
+% myKsDir = 'D:\SharedEphysData\FromSyliva\SS088_2018-01-30_K2\';
+myKsDir = 'D:\SharedEphysData\FerminoData\KilosortOut\Kilosort2_2021-03-13_180605\';
+
 
 %% load results
 metricFile = [myKsDir filesep 'cluster_group - copy.csv'];
