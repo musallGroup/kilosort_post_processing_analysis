@@ -1,11 +1,13 @@
 
 # assign paths
-fPath = r'\\naskampa\lts\invivo_ephys\SharedEphys\FromSylvia\SS088_2018-01-30_K1\SS088_2018-01-30_K1_g0\SS088_2018-01-30_K1_g0_imec0\SS088_2018-01-30_K1_g0_t0_imec\imec_ks2'
-fPath = r'D:\SharedEphysData\FromSyliva\SS089_2018-02-07_K1'
+# fPath = r'\\naskampa\lts\invivo_ephys\SharedEphys\FromSylvia\SS088_2018-01-30_K1\SS088_2018-01-30_K1_g0\SS088_2018-01-30_K1_g0_imec0\SS088_2018-01-30_K1_g0_t0_imec\imec_ks2'
+# fPath = r'D:\SharedEphysData\FromSyliva\SS089_2018-02-07_K1'
 # fPath = r'Z:\invivo_ephys\SharedEphys\FromGia\recording1'
 # fPath = r'D:\test'
-fPath = r'D:\SharedEphysData\FerminoData\KilosortOut\Kilosort2_2021-03-13_180605'
-fPath = r'D:\SharedEphysData\FerminoData\KilosortOut\Kilosort2_2022-01-10_205701'
+# fPath = r'D:\SharedEphysData\FerminoData\KilosortOut\Kilosort2_2021-03-13_180605'
+# fPath = r'D:\SharedEphysData\FerminoData\KilosortOut\Kilosort2_2022-01-10_205701'
+fPath = r'D:\SharedEphysData\FromGaia\recording1'
+fPath = r'D:\SharedEphysData\FromGaia\recording2'
 
 
 classifierPath = r'\\naskampa\lts\invivo_ephys\SharedEphys'
