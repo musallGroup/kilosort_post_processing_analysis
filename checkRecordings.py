@@ -1,6 +1,6 @@
-# targFolder = r'D:\SharedEphysData\FromSyliva'
+targFolder = r'D:\SharedEphysData\FromSyliva'
 # targFolder = r'D:\SharedEphysData\FerminoData\KilosortOut'
-targFolder = r'D:\SharedEphysData\FromGaia'
+# targFolder = r'D:\SharedEphysData\FromGaia'
 
 # get modules and params
 import os
@@ -114,7 +114,7 @@ for i, cComb in enumerate(allCombs):
         gTruth = merge_frames([xx], ['group'])
         gTruth = pd.concat(gTruth[0],axis = 0)
         a = pd.get_dummies(gTruth['group'])
-        frames['gTruth'] = a['noise']   
+        frames['gTruth'] = a['noise']
         
         print(cFiles)
         test_predictor(frames, classifierPath); # test classifier
@@ -127,12 +127,19 @@ for i, cComb in enumerate(allCombs):
         cIdx = frames['gTruth'] == 0
         temp2 =  np.round(np.sum(frames['is_noise'][cIdx]) / np.sum(cIdx),2)
      
+        # compare with KSlabels
+        # kslabel = merge_frames([xx], ['KSLabel'])
+        # kslabel = pd.concat(kslabel[0],axis = 0)
+        # a = pd.get_dummies(kslabel['KSLabel'])
+        # frames['KSLabel'] = a['noise']
+     
         # keep results for currrent recording / decoder
         decoderPerf = decoderPerf.append({'HitRate': temp1, 
                                           'FalseAlarmRate': temp2, 
                                           'trainedRecs': int(round(np.sum(cComb)))},
                                           ignore_index = True)
                          
+        
 
 #show results
 print('Decoder performance on unseen datasets for folder: ' + targFolder)

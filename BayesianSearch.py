@@ -27,14 +27,14 @@ seed=1
 # define search space, you can  add your own models 
 clfs = {
         'AdaBoostClassifier' : AdaBoostClassifier(random_state=seed),
-        'GradientBoostingClassifier' :GradientBoostingClassifier(random_state=seed),
+        # 'GradientBoostingClassifier' :GradientBoostingClassifier(random_state=seed),
         'RandomForestClassifier' :RandomForestClassifier(random_state=seed,n_jobs=-1),
         'KNeighborsClassifier': KNeighborsClassifier(n_jobs=-1),
         # 'SVC': SVC(random_state=seed,probability=True),
-        'MLPClassifier' :MLPClassifier(random_state=seed, max_iter=300,hidden_layer_sizes= (50, 100)),
+        # 'MLPClassifier' :MLPClassifier(random_state=seed, max_iter=300,hidden_layer_sizes= (50, 100)),
         'ExtraTreesClassifier' : ExtraTreesClassifier(n_estimators=100, random_state=0),
-        'XGBClassifier' : XGBClassifier(n_estimators=100, random_state=0),
-        'LGBMClassifier' : LGBMClassifier(random_state=0)
+        # 'XGBClassifier' : XGBClassifier(n_estimators=100, random_state=0),
+        # 'LGBMClassifier' : LGBMClassifier(random_state=0)
 }
 models =  list(clfs.keys())
 # models = [ 'AdaBoostClassifier',
