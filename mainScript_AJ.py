@@ -4,7 +4,7 @@ Created on Thu Apr  7 13:47:19 2022
 
 @author: jain
 """
-fPath = r'D:\SharedEcephys\FromDimos\20210203_DK_252MEA10030_le_sp_maybe_ventral'
+fPath = r'D:\SharedEcephys\FromDimos\20220208_DKHMS_60pMEA10030_re_n1'
 # fPath = r'Z:\invivo_ephys\SharedEphys\FromGia\recording1'
 # fPath = r'D:\test'
 
@@ -58,37 +58,28 @@ Qmetrics.to_csv(baseParams.QMparams['quality_metrics_output_file'])
 #%% #https://medium.com/@pratap_aish/how-do-i-run-my-matlab-functions-in-python-7d2b8b2fefd1
 import matlab.engine
 eng = matlab.engine.start_matlab()
-eng.pC_getSyncMetric_old(fPath)
-
-#%% run noise_template module and save output
-print('running noise_template module')
-nClusterIDs = clusterIDs[clusterIDs <= templates.shape[0]]
-
-cluster_ids, is_noise = id_noise_templates(nClusterIDs, 
-                                           templates, 
-                                           np.squeeze(channel_map), 
-                                           baseParams.noiseParams)
-
-mapping = {False: 'neural', True: 'noise'}
-labels = [mapping[value] for value in is_noise]
-df = pd.DataFrame(data={'cluster_id' : cluster_ids, 'group': labels})
-df.to_csv(fPath + r'\noiseModule.csv')
-
+eng.pC_getSyncMetric(fPath)
 
 #%% run noise Classifier and save output
-
+df = pd.read_csv('metrics.csv')
+percent_missing = df.isnull().sum() * 100 / len(df)
 # baseParams.useNoiseMetrics contains all the metrics of interest. 
 # make sure this includes cluster_id
 baseParams.useNoiseMetrics.append('cluster_id')
 baseParams.useNoiseMetrics = list(set(baseParams.useNoiseMetrics))
 
 frames = merge_frames([fPath], baseParams.useNoiseMetrics) # get metrics from recording
-gTruth = merge_frames([fPath], ['group']) # get ground Truth labels
+
+# get ground Truth labels # Assumption: labels are binary and in string. example: neural ,noise
+# when manual labelling is in phy, the changes are reflected in cluster_group.csv 
+gTruth = merge_frames([fPath], ['group']) 
+
 df_auc = plot_roc_curve(fPath,frames,gTruth) # get AUC values for each metric
-rslt_df = df_auc[(df_auc['roc_auc'] > 0.70) & (df_auc['roc_auc'] < 0.30) ] # get metric with high AUC values 
 
-print(set(rslt_df.columns).intersection(set(baseParams.useNoiseMetrics)))
-
+rslt_df = df_auc.loc[(df_auc.roc_auc > 0.69) | (df_auc.roc_auc < 0.31)] # get metric with high AUC values 
+rocMetrics = list(rslt_df.metric)
+print(set(rocMetrics).intersection(set(baseParams.useNoiseMetrics)))
+use_rocMetrics = set(rocMetrics).intersection(set(baseParams.useNoiseMetrics))
 
 run_predictor(frames[0][0]) # test classifier
 
@@ -112,7 +103,19 @@ run_predictor(frames[0][0]) # test classifier
     
 #%%
 
+#%% run noise_template module and save output
+print('running noise_template module')
+nClusterIDs = clusterIDs[clusterIDs <= templates.shape[0]]
 
+cluster_ids, is_noise = id_noise_templates(nClusterIDs, 
+                                           templates, 
+                                           np.squeeze(channel_map), 
+                                           baseParams.noiseParams)
+
+mapping = {False: 'neural', True: 'noise'}
+labels = [mapping[value] for value in is_noise]
+df = pd.DataFrame(data={'cluster_id' : cluster_ids, 'group': labels})
+df.to_csv(fPath + r'\noiseModule.csv')
 
                     
                     
