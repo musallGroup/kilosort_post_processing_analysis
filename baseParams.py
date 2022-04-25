@@ -36,13 +36,35 @@ noiseParams = {
 
 
 # quality metrics to be used for noise classifier
-useNoiseMetrics = ['syncSpike_2',
-                'syncSpike_4',
+useNoiseMetrics = ['syncSpike_2', 
+                   'syncSpace_2',
+                   'farSyncSpike_2', 
+                   'nearSyncSpike_2',
+                   
+                   'syncSpike_4', 
+                   'syncSpace_4',
+                   'farSyncSpike_4', 
+                   'nearSyncSpike_4',
+                   
+                   'syncSpike_8', 
+                   'syncSpace_8',
+                   'farSyncSpike_8', 
+                   'nearSyncSpike_8',
+                   
                 'firing_rate',
                 'presence_ratio',
+                'isi_viol',
+                'amplitude_cutoff',
+                'isolation_distance',
+                'l_ratio',
+                'd_prime',
                 'nn_hit_rate',
                 'nn_miss_rate',
-                'cumulative_drift']
+                'silhouete_score',
+                 'max_drift',
+                 'cumulative_drift',
+                'Amplitude',
+                'ContamPct']
 
 
     
