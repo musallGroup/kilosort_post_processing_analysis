@@ -162,43 +162,33 @@ def plot_roc_curve(fPath, frame, gTruth):
     df_auc : data frame with AUC values for each metric 
     
     """
-    plt.figure(figsize=(14,10),dpi=640)    
+     
+    fig, ax = plt.subplots(figsize=(6, 8))
     
     a = pd.get_dummies(gTruth[0][0]['group'])
     frame[0][0]['gTruth'] = a['noise']  
     frame[0][0] = frame[0][0].fillna(frame[0][0].median())
-    print(frame[0][0].isnull().sum())  # use this to find feature columns that can have nans
+    #print(frame[0][0].isnull().sum())  # use this to find feature columns that can have nans
     roc_aucs = []
     for column in frame[0][0].columns:
         actual1=frame[0][0]['gTruth']
         prediction1= frame[0][0][column]
         fpr, tpr, thresholds = metrics.roc_curve(actual1,prediction1)
-        #fpr, tpr, thresholds = metrics.roc_curve(actual1,prediction1, pos_label=0) for firing_rate
-        #auc1 = auc(fpr,tpr)
+
         roc_auc = metrics.auc(fpr, tpr)
         roc_aucs.append(roc_auc)
      
-        #plt.plot(fpr, tpr,label="AUC prediction:{0}".format(roc_auc),color='red', linewidth=2)
-        plt.title(column,fontsize=40)
-        plt.plot(fpr, tpr, 'b', label = 'AUC = %0.2f' % roc_auc)
-        plt.legend(loc = 'lower right',fontsize=40)
-        plt.plot([0, 1], [0, 1],'r--')
-        plt.xlim([0, 1])
-        plt.ylim([0, 1])
-        plt.ylabel('True Positive Rate',fontsize=30)
-        plt.xlabel('False Positive Rate',fontsize=30)
-        plt.show()
-
     metric_col = list(frame[0][0].columns)
     L = [list(row) for row in zip(metric_col, roc_aucs)]
     df_auc = pd.DataFrame(L, columns=['metric', 'roc_auc'])
     values = ['cluster_id', 'gTruth']
     df_auc = df_auc[df_auc.metric.isin(values) == False]
-    #sorted_index = df_auc.mean().sort_values().index
-    #df_sorted=df_auc[sorted_index]
-    #sns.barplot(data=df_sorted, orient='h')
-    ax = df_auc.plot.barh(x='metric', y='roc_auc', rot=0)
-    plt.show()
+    sns.barplot(x='roc_auc',
+            y="metric", 
+            data=df_auc, 
+            order=df_auc.sort_values('roc_auc').metric, orient = 'h')
+    
+    
     return df_auc
 
 def plot_umap_embedding(X, y, title):
