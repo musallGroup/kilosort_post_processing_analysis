@@ -27,78 +27,78 @@ seed=1
 # define search space, you can  add your own models 
 clfs = {
         'AdaBoostClassifier' : AdaBoostClassifier(random_state=seed),
-        'GradientBoostingClassifier' :GradientBoostingClassifier(random_state=seed),
+        # 'GradientBoostingClassifier' :GradientBoostingClassifier(random_state=seed),
         'RandomForestClassifier' :RandomForestClassifier(random_state=seed,n_jobs=-1),
         'KNeighborsClassifier': KNeighborsClassifier(n_jobs=-1),
-        'SVC': SVC(random_state=seed,probability=True),
-        'MLPClassifier' :MLPClassifier(random_state=seed, max_iter=300,hidden_layer_sizes= (50, 100)),
+        # 'SVC': SVC(random_state=seed,probability=True),
+        # 'MLPClassifier' :MLPClassifier(random_state=seed, max_iter=300,hidden_layer_sizes= (50, 100)),
         'ExtraTreesClassifier' : ExtraTreesClassifier(n_estimators=100, random_state=0),
-        'XGBClassifier' : XGBClassifier(n_estimators=100, random_state=0),
-        'LGBMClassifier' : LGBMClassifier(random_state=0)
+        # 'XGBClassifier' : XGBClassifier(n_estimators=100, random_state=0),
+        # 'LGBMClassifier' : LGBMClassifier(random_state=0)
 }
-#model =  list(clfs.keys)
-models = [ 'AdaBoostClassifier',
-           'GradientBoostingClassifier',
-           'RandomForestClassifier',
-           'KNeighborsClassifier',
-           'SVC',
-           'MLPClassifier',
-           'ExtraTreesClassifier',
-           'XGBClassifier',
-           'LGBMClassifier'] 
+models =  list(clfs.keys())
+# models = [ 'AdaBoostClassifier',
+#            'GradientBoostingClassifier',
+#            'RandomForestClassifier',
+#            'KNeighborsClassifier',
+#            'SVC',
+#            'MLPClassifier',
+#            'ExtraTreesClassifier',
+#            'XGBClassifier',
+#            'LGBMClassifier'] 
           
 params = {
-            models[0]:{'learning_rate':[1,2], 
+            'AdaBoostClassifier':{'learning_rate':[1,2], 
                        'n_estimators':[50,100],
                        'algorithm':['SAMME','SAMME.R']
                        },#AdaB
     
-            models[1]:{'learning_rate':[0.05,0.1],
+            'GradientBoostingClassifier':{'learning_rate':[0.05,0.1],
                        'n_estimators':[100,150], 
                        'max_depth':[2,4],
                        'min_samples_split':[2,4],
                        'min_samples_leaf': [2,4]
                        }, #GBC
     
-            models[2]:{'n_estimators':[100,150],
+            'RandomForestClassifier':{'n_estimators':[100,150],
                        'criterion':['gini','entropy'],
                        'min_samples_split':[2,4],
                        'min_samples_leaf': [2,4]
                        }, #RFC
     
-            models[3]:{'n_neighbors':[20,50], 
+            'KNeighborsClassifier':{'n_neighbors':[20,50], 
                        'weights':['distance','uniform'],
                        'leaf_size':[30]
                        }, #KNN
     
-            models[4]: {'C':[0.5,2.5],
+            'SVC': {'C':[0.5,2.5],
                        'kernel':['sigmoid','linear','poly','rbf']
                        }, #SVC
             
-            models[5]: {
+            'MLPClassifier': {
                          'activation': ['tanh', 'relu'],
                          'solver': ['sgd', 'adam'],
                          'alpha': [0.0001, 0.05],
                          'learning_rate': ['constant','adaptive']
                          }, #MLP
     
-            models[6]:{'criterion':['gini', 'entropy'],  
+            'ExtraTreesClassifier':{'criterion':['gini', 'entropy'],  
                        'class_weight':['balanced', 'balanced_subsample']
                        }, #extratrees
     
-             models[7]:{'max_depth':[2,4], 
+             'XGBClassifier':{'max_depth':[2,4], 
                        'eta': [0.2,0.5], 
                        'sampling_method':['uniform','gradient_based'],
                        'grow_policy':['depthwise', 'lossguide']
                       }, #xgboost
                         
     
-            models[8]:{'learning_rate':[0.05,0.15],
+            'LGBMClassifier':{'learning_rate':[0.05,0.15],
                        'n_estimators': [100,150]} #lightgbm
     
          }
 # run search with given dataset        
-def run_search(preprocessing_pipeline, X, y):
+def run_search(preprocessing_pipeline, X, y, classifierPath):
     print('performing bayesian search for best classifier')
 
     X_train, X_test, y_train, y_test = train_test_split(X, y) #(train and validate on 75%, test on 25% of data)
@@ -114,8 +114,8 @@ def run_search(preprocessing_pipeline, X, y):
     X_test_final = supervised_embedder.transform(X_test_trans)
 
     usedMetrics = list(X.columns)
-    cPath = os.path.dirname(inspect.getfile(run_search)); # find directory of this function and save pickle files there
-    pickle.dump([supervised_embedder, usedMetrics], open(cPath + '\crossVal_embedder.sav', 'wb'))
+    # cPath = os.path.dirname(inspect.getfile(run_search)); # find directory of this function and save pickle files there
+    pickle.dump([supervised_embedder, usedMetrics], open(classifierPath + '\crossVal_embedder.sav', 'wb'))
 
     # time passes
     test_scores = []
@@ -156,5 +156,5 @@ def run_search(preprocessing_pipeline, X, y):
     }
     
     print("best_config with Configuration is ", incumbent_config)
-    json.dump(incumbent_config, open(cPath + '\incumbent_config.json', 'w'))
+    json.dump(incumbent_config, open(classifierPath + '\incumbent_config.json', 'w'))
     
