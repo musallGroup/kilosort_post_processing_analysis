@@ -3,10 +3,6 @@
 # fPath = r'\\naskampa\lts\invivo_ephys\SharedEphys\FromSylvia\SS088_2018-01-30_K1\SS088_2018-01-30_K1_g0\SS088_2018-01-30_K1_g0_imec0\SS088_2018-01-30_K1_g0_t0_imec\imec_ks2'
 # fPath = r'D:\SharedEphysData\FromSyliva\SS089_2018-02-07_K1'
 # fPath = r'Z:\invivo_ephys\SharedEphys\FromGia\recording1'
-# fPath = r'D:\SharedEphysData\FromGaia\recording3'
-# fPath = r'D:\SharedEphysData\FromGaia\recording4'
-# fPath = r'D:\SharedEphysData\FromGaia\recording5'
-
 # fPath = r'D:\test'
 # fPath = r'D:\SharedEphysData\FerminoData\KilosortOut\Kilosort2_2021-03-13_180605'
 # fPath = r'D:\SharedEphysData\FerminoData\KilosortOut\Kilosort2_2022-01-10_205701'
@@ -15,17 +11,11 @@
 # fPath = r'D:\SharedEphysData\FromDimos\20220208_HMS_60pMEA10030_re_i1'
 # fPath = r'D:\SharedEphysData\FromDimos\20220208_DKHMS_60pMEA10030_re_n1'
 # fPath = r'D:\SharedEphysData\FromDimos\20211026_DK_252MEA6010_le_s1'
+fPath = r'D:\SharedEphysData\FromDimos\20210916_DK_252MEA6010_re_sp_ventral'
 
-# fPath = r'D:\SharedEphysData\FromDimos\20210803_DK_252MEA6010_le_sp_dorsal'
-# fPath = r'D:\SharedEphysData\FromDimos\20210916_DK_252MEA6010_re_sp_ventral'
-# fPath = r'D:\SharedEphysData\FromDimos\20210203_DK_252MEA10030_le_sp_maybe_ventral'
 
-fPath = r'D:\SharedEphysData\FerminoData\KilosortOut\Kilosort2_2021-06-09_215834'
-fPath = r'D:\SharedEphysData\FerminoData\KilosortOut\Kilosort2_2021-09-21_120535'
-fPath = r'D:\SharedEphysData\FerminoData\KilosortOut\Kilosort2_2021-05-04_154700'
-fPath = r'D:\SharedEphysData\FerminoData\KilosortOut\Kilosort2_2021-07-13_184534'
-fPath = r'D:\SharedEphysData\FerminoData\KilosortOut\Kilosort2_2021-07-12_150213'
-
+fPath = r'D:\SharedEphysData\FromDimos\20210803_DK_252MEA6010_le_sp_dorsal'
+fPath = r'D:\SharedEphysData\FromDimos\20210203_DK_252MEA10030_le_sp_maybe_ventral'
 
 
 classifierPath = r'\\naskampa\lts\invivo_ephys\SharedEphys'

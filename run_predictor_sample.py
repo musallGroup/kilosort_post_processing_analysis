@@ -14,6 +14,7 @@ import matplotlib.pyplot as plt
 import json
 import inspect
 import numpy as np
+import pandas as pd
 
 #%% load path cell1
 
@@ -111,15 +112,25 @@ def test_predictor(test_dataframe, classifierPath):
     # plt.savefig('decision-boundary.png')
     plt.show()
     
-    #hit rate (percent recognized noise clusters)    
-    cIdx = test_dataframe['gTruth'] == 1
-    print('HitRate for noise clusters: ' + str(np.round(np.sum(test_dataframe['is_noise'][cIdx]) / np.sum(cIdx),2)))
- 
+    # confusionMatrix = pd.DataFrame(columns=['TruePositive', 'FalsePositive', 'TrueNegative', 'FalseNegative', 'TotalPerf'])
+    confusionMatrix = np.zeros(5)
+
+    #true positive (correctly recognized noise clusters)    
+    confusionMatrix[0] = np.sum((test_dataframe['is_noise'] == 1) & (test_dataframe['gTruth'] == 1)) / len(test_dataframe['gTruth'])
+    
     #false alarm rate (percent falsely labeled neural clusters)    
-    cIdx = test_dataframe['gTruth'] == 0
-    print('FalseAlarmRate for noise clusters: ' + str(np.round(np.sum(test_dataframe['is_noise'][cIdx]) / np.sum(cIdx),2)))
-            
-    return test_dataframe['is_noise']
+    confusionMatrix[1]  = np.sum((test_dataframe['is_noise'] == 1) & (test_dataframe['gTruth'] == 0)) / len(test_dataframe['gTruth'])
+ 
+    #true negative (correctly recognized neural clusters)    
+    confusionMatrix[2]  = np.sum((test_dataframe['is_noise'] == 0) & (test_dataframe['gTruth'] == 0)) / len(test_dataframe['gTruth'])
+    
+    #false negatove (missed noise clusters)    
+    confusionMatrix[3]  = np.sum((test_dataframe['is_noise'] == 0) & (test_dataframe['gTruth'] == 1)) / len(test_dataframe['gTruth'])
+ 
+    #total performance    
+    confusionMatrix[4]  =  np.round(np.sum(test_dataframe['is_noise'] == test_dataframe['gTruth']) / len(test_dataframe['gTruth']), 2)
+        
+    return test_dataframe['is_noise'], confusionMatrix
 
 
 def identify_best_estimator(dataset, metrics, classifierPath):

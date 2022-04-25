@@ -1,5 +1,5 @@
-targFolder = r'D:\SharedEphysData\FromSyliva'
-# targFolder = r'D:\SharedEphysData\FerminoData\KilosortOut'
+# targFolder = r'D:\SharedEphysData\FromSyliva'
+targFolder = r'D:\SharedEphysData\FerminoData\KilosortOut'
 # targFolder = r'D:\SharedEphysData\FromGaia'
 
 # get modules and params
@@ -22,8 +22,16 @@ fPath = []
 for i, path in enumerate(folderCheck):
     if os.path.isfile(os.path.join(targFolder,path,'cluster_group.tsv')):
         fPath.append(path)
+
+
+#%% add in ROC analysis here to get ROCS from each recording
+
+
+
+
+
         
-        
+#%%   
 # compute possible logical combinations for classifiers
 allCombs = [str(np.zeros(len(fPath)))]*pow(2,len(fPath))
 for i in range(pow(2,len(fPath))):
@@ -36,7 +44,7 @@ for i in range(pow(2,len(fPath))):
             allCombs[i][x] = '1'
             
             
-allCombs = allCombs[1:] #dont use first and last case
+allCombs = allCombs[1:] #dont use first case
             
 #%% train all classifiers from scratch
 if os.path.isdir(targFolder + r'\crossRefClassifiers') == False:
@@ -66,7 +74,7 @@ for i in allCombs:
 
 
 #%% test all classifiers
-decoderPerf = pd.DataFrame(columns=['HitRate', 'FalseAlarmRate', 'trainedRecs'])
+decoderPerf = pd.DataFrame(columns=['TruePositive', 'FalsePositive', 'TrueNegative', 'FalseNegative', 'TotalPerf', 'trainedRecs'])
 
 # test default classifier    
 for xx in fPath:
@@ -80,19 +88,14 @@ for xx in fPath:
     a = pd.get_dummies(gTruth['group'])
     frames['gTruth'] = a['noise']   
     
-    test_predictor(frames, defClassifierPath); # test classifier
+    [isNoise, confusionMatrix] = test_predictor(frames, defClassifierPath); # test classifier
 
-    #hit rate (percent recognized noise clusters)    
-    cIdx = frames['gTruth'] == 1
-    temp1 = np.round(np.sum(frames['is_noise'][cIdx]) / np.sum(cIdx),2)
- 
-    #false alarm rate (percent falsely labeled neural clusters)    
-    cIdx = frames['gTruth'] == 0
-    temp2 =  np.round(np.sum(frames['is_noise'][cIdx]) / np.sum(cIdx),2)
- 
     # keep results for currrent recording / decoder
-    decoderPerf = decoderPerf.append({'HitRate': temp1, 
-                                      'FalseAlarmRate': temp2, 
+    decoderPerf = decoderPerf.append({'TruePositive': confusionMatrix[0], 
+                                      'FalsePositive': confusionMatrix[1],
+                                      'TrueNegative': confusionMatrix[2],
+                                      'FalseNegative': confusionMatrix[3],
+                                      'TotalPerf': confusionMatrix[4],
                                       'trainedRecs': 0},
                                       ignore_index = True)
     
@@ -116,40 +119,20 @@ for i, cComb in enumerate(allCombs):
         a = pd.get_dummies(gTruth['group'])
         frames['gTruth'] = a['noise']
         
-        print(cFiles)
-        test_predictor(frames, classifierPath); # test classifier
+        [isNoise, confusionMatrix] = test_predictor(frames, classifierPath); # test classifier
 
-        #hit rate (percent recognized noise clusters)    
-        cIdx = frames['gTruth'] == 1
-        temp1 = np.round(np.sum(frames['is_noise'][cIdx]) / np.sum(cIdx),2)
-     
-        #false alarm rate (percent falsely labeled neural clusters)    
-        cIdx = frames['gTruth'] == 0
-        temp2 =  np.round(np.sum(frames['is_noise'][cIdx]) / np.sum(cIdx),2)
-     
-        # compare with KSlabels
-        # kslabel = merge_frames([xx], ['KSLabel'])
-        # kslabel = pd.concat(kslabel[0],axis = 0)
-        # a = pd.get_dummies(kslabel['KSLabel'])
-        # frames['KSLabel'] = a['noise']
-     
         # keep results for currrent recording / decoder
-        decoderPerf = decoderPerf.append({'HitRate': temp1, 
-                                          'FalseAlarmRate': temp2, 
+        decoderPerf = decoderPerf.append({'TruePositive': confusionMatrix[0], 
+                                          'FalsePositive': confusionMatrix[1],
+                                          'TrueNegative': confusionMatrix[2],
+                                          'FalseNegative': confusionMatrix[3],
+                                          'TotalPerf': confusionMatrix[4],
                                           'trainedRecs': int(round(np.sum(cComb)))},
                                           ignore_index = True)
                          
-        
-
 #show results
 print('Decoder performance on unseen datasets for folder: ' + targFolder)
 print(decoderPerf.sort_values('trainedRecs'))
-    
-
-
-
-
-
 
 #%% combine existing with new labels and see if default classifier becomes better
 embeder = pickle.load(open(defClassifierPath + '\embedder.sav', 'rb'))
@@ -187,7 +170,7 @@ for i in allCombs:
 
 
 #%% test all merged classifiers
-mergeDecoderPerf = pd.DataFrame(columns=['HitRate', 'FalseAlarmRate', 'trainedRecs'])
+mergeDecoderPerf = pd.DataFrame(columns=['TruePositive', 'FalsePositive', 'TrueNegative', 'FalseNegative', 'TotalPerf', 'trainedRecs'])
 
 # test adjusted classifiers
 for i, cComb in enumerate(allCombs):
@@ -196,7 +179,7 @@ for i, cComb in enumerate(allCombs):
     for x in range(len(cComb)):
         if cComb[x] == 0 or np.sum(cComb) == len(cComb):
             cFiles.append(os.path.join(targFolder, fPath[x]))
-            
+
     classifierPath = os.path.join(targFolder, 'crossRefClassifiers', 'mergeClf_' + str(cComb))
         
     for xx in cFiles:
@@ -210,19 +193,14 @@ for i, cComb in enumerate(allCombs):
         frames['gTruth'] = a['noise']   
         
         print(cFiles)
-        test_predictor(frames, classifierPath); # test classifier
+        [isNoise, confusionMatrix] = test_predictor(frames, classifierPath); # test classifier
 
-        #hit rate (percent recognized noise clusters)    
-        cIdx = frames['gTruth'] == 1
-        temp1 = np.round(np.sum(frames['is_noise'][cIdx]) / np.sum(cIdx),2)
-     
-        #false alarm rate (percent falsely labeled neural clusters)    
-        cIdx = frames['gTruth'] == 0
-        temp2 =  np.round(np.sum(frames['is_noise'][cIdx]) / np.sum(cIdx),2)
-     
         # keep results for currrent recording / decoder
-        mergeDecoderPerf = mergeDecoderPerf.append({'HitRate': temp1, 
-                                          'FalseAlarmRate': temp2, 
+        mergeDecoderPerf = mergeDecoderPerf.append({'TruePositive': confusionMatrix[0], 
+                                          'FalsePositive': confusionMatrix[1],
+                                          'TrueNegative': confusionMatrix[2],
+                                          'FalseNegative': confusionMatrix[3],
+                                          'TotalPerf': confusionMatrix[4],
                                           'trainedRecs': int(round(np.sum(cComb)))},
                                           ignore_index = True)
                          
