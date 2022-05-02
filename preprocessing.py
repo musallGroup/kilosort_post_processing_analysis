@@ -61,33 +61,8 @@ from sklearn.pipeline import Pipeline
 import umap
 
 
-#1. Combine csv and tsv files 
-# def merge_frames(paths_all):
-#     frames = {}
-#     for i, path in enumerate(paths_all): #parse with indexing
-#         frames[i] = []
-#         for file in os.listdir(path):
-#             if ".tsv" in file:
-#                 frame = pd.read_csv(os.path.join(path, file), sep='\t')
-#                 frames[i].append(frame)
-#             elif ".csv" in file and 'merged_data_frames' not in file:
-#                 frame = pd.read_csv(os.path.join(path, file))
-#                 frames[i].append(frame)
-                
-#     # 2. merge the dataframes
-#     for key in frames:
-#         #print(key, '->', frames[key])
-#         frame = frames[key][0]
-#         for merge_frame in frames[key][1:]:
-#             frame = frame.merge(merge_frame, on="cluster_id")
-#         frames[key] = frame
-    
-#     # 3. write into a file
-#     for i, path in enumerate(paths_all):
-#         frames[i].to_csv(os.path.join(path, 'merged_data_frames.csv'))
-#     return frames
 
-def merge_frames(paths_all, useMetrics):
+def get_feature_columns(paths_all, useMetrics):
     frames = {}
     missedMetrics = {}
     for i, path in enumerate(paths_all): #parse with indexing
@@ -130,6 +105,78 @@ def merge_frames(paths_all, useMetrics):
         missedMetrics[i] = searchMetrics
         
     return frames, missedMetrics
+
+def remove_miss_vals(frame):
+    # removing columns with high precentage of nans 
+    if 'epoch_name' in frame.columns:
+        frame.drop(['epoch_name'],axis = 1,inplace=True)
+    if 'Var1' in frame.columns:
+        frame.drop(['Var1'],axis = 1,inplace=True)
+    if 'Unnamed: 0' in frame.columns:
+        frame.drop(['Unnamed: 0'],axis = 1,inplace=True)
+        
+    print('columns with missing vals : ', frame.columns[frame.isnull().any()].tolist())
+    percent_missing = frame.isnull().sum() * 100 / len(frame)
+    drop_cols = np.where(percent_missing > 79.0)[0].tolist()
+    
+    print("columns dropped : " , frame.columns[drop_cols].values)
+    
+    frame = frame.drop(columns= frame.columns[drop_cols], axis=1)
+    frame.replace([np.inf, -np.inf], np.nan, inplace=True)
+    #interpolation to handle missing values
+    trans_frame = frame.interpolate(limit_direction ='both')
+    percent_missing = trans_frame.isnull().sum() * 100 / len(trans_frame)
+    print('columns with missing vals after interpolation : ', trans_frame.columns[trans_frame.isnull().any()].tolist())
+    
+    return trans_frame
+
+
+def get_roc_metrics(frame, gTruth):
+    
+
+    """
+    Use : Find the metrics that can help identify noise. 
+
+    Inputs:
+    -------
+    fPath : Output to Kilosort Directory 
+    frame : Dataframe with all the quality metrics
+    gTruth : Manual label 
+    
+
+    Outputs:
+    -------
+    df_auc : data frame with AUC values for each metric 
+    
+    """
+     
+    fig, ax = plt.subplots(figsize=(6, 8))
+    
+    a = pd.get_dummies(gTruth['group'])
+    frame['gTruth'] = a['noise']  
+
+    roc_aucs = []
+    for column in frame.columns:
+        actual = frame['gTruth']
+        prediction = frame[column]
+        fpr, tpr, thresholds = metrics.roc_curve(actual,prediction)
+
+        roc_auc = metrics.auc(fpr, tpr)
+        roc_aucs.append(roc_auc)
+     
+    metric_col = list(frame.columns)
+    L = [list(row) for row in zip(metric_col, roc_aucs)]
+    df_auc = pd.DataFrame(L, columns=['q_metric', 'roc_auc_val'])
+    
+    values = ['gTruth']
+    df_auc = df_auc[df_auc.q_metric.isin(values) == False]
+    sns.barplot(x='roc_auc_val',
+            y="q_metric", 
+            data=df_auc, 
+            order=df_auc.sort_values('roc_auc_val').q_metric, orient = 'h')
+    
+    return df_auc
+
 
 
 # 4. cleaned datasets : all non-useful features are dropped andchange categorical into integer
