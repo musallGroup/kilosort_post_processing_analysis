@@ -144,52 +144,7 @@ def merge_frames(paths_all):
     return frames
 
 
-def plot_roc_curve(fPath, frame, gTruth):
-    
 
-    """
-    Use : Find the metrics that can help identify noise. 
-
-    Inputs:
-    -------
-    fPath : Output to Kilosort Directory 
-    frame : Dataframe with all the quality metrics
-    gTruth : Manual label 
-    
-
-    Outputs:
-    -------
-    df_auc : data frame with AUC values for each metric 
-    
-    """
-     
-    fig, ax = plt.subplots(figsize=(6, 8))
-    
-    a = pd.get_dummies(gTruth[0][0]['group'])
-    frame[0][0]['gTruth'] = a['noise']  
-    frame[0][0] = frame[0][0].fillna(frame[0][0].median())
-    #print(frame[0][0].isnull().sum())  # use this to find feature columns that can have nans
-    roc_aucs = []
-    for column in frame[0][0].columns:
-        actual1=frame[0][0]['gTruth']
-        prediction1= frame[0][0][column]
-        fpr, tpr, thresholds = metrics.roc_curve(actual1,prediction1)
-
-        roc_auc = metrics.auc(fpr, tpr)
-        roc_aucs.append(roc_auc)
-     
-    metric_col = list(frame[0][0].columns)
-    L = [list(row) for row in zip(metric_col, roc_aucs)]
-    df_auc = pd.DataFrame(L, columns=['metric', 'roc_auc'])
-    values = ['cluster_id', 'gTruth']
-    df_auc = df_auc[df_auc.metric.isin(values) == False]
-    sns.barplot(x='roc_auc',
-            y="metric", 
-            data=df_auc, 
-            order=df_auc.sort_values('roc_auc').metric, orient = 'h')
-    
-    
-    return df_auc
 
 def plot_umap_embedding(X, y, title):
     fig, ax = plt.subplots()
