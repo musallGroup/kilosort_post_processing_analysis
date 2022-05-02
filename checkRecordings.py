@@ -1,19 +1,21 @@
+
+
 # targFolder = r'D:\SharedEphysData\FromSyliva'
-targFolder = r'D:\SharedEphysData\FerminoData\KilosortOut'
+targFolder = r'Y:\invivo_ephys\SharedEphys\FromFermino'
 # targFolder = r'D:\SharedEphysData\FromGaia'
 
 # get modules and params
 import os
 import numpy as np
 import pandas as pd
-from preprocessing import merge_frames
+from preprocessing import get_feature_columns,remove_miss_vals,get_roc_metrics
 from run_predictor_sample import test_predictor, identify_best_estimator
 import baseParams
 import inspect
 import pickle
 
 # path to default classifier
-defClassifierPath = r'C:\Users\musall\Documents\GitHub\kilosort_post_processing_analysis'
+defClassifierPath = r'C:\Users\jain\Documents\GitHub\kilosort_post_processing_analysis'
 
 
 # get recordings and keep the ones that have the cluster_group.tsv file
@@ -25,12 +27,31 @@ for i, path in enumerate(folderCheck):
 
 
 #%% add in ROC analysis here to get ROCS from each recording
+auc_frames = {}
+auc_features ={}
+array_length = len(fPath)
 
-
-
-
-
+for i in range(array_length):
+    print("=====================", i)
+    baseParams.useNoiseMetrics = list(set(baseParams.useNoiseMetrics))
+    frames = get_feature_columns([os.path.join(targFolder,fPath[i])], baseParams.useNoiseMetrics) # get metrics from recording
+    gTruth = get_feature_columns([os.path.join(targFolder,fPath[i])], ['group']) 
+    
+    frame = frames[0][0]
+    gTruth = gTruth[0][0]
+    print("=====================")
+    trans_frame = remove_miss_vals(frame)
+    auc_vals_frame = get_roc_metrics(trans_frame, gTruth)
         
+    keep_cols =  np.where((auc_vals_frame.roc_auc_val > 0.59) | (auc_vals_frame.roc_auc_val < 0.41))[0].tolist() # get metric with high AUC values 
+    metrics_names = trans_frame.columns[keep_cols].values
+    metrics_df = pd.DataFrame(trans_frame, columns = metrics_names)
+   
+    auc_frames[i] = metrics_df
+    auc_features[i] = metrics_names
+    
+        
+   
 #%%   
 # compute possible logical combinations for classifiers
 allCombs = [str(np.zeros(len(fPath)))]*pow(2,len(fPath))
@@ -59,11 +80,11 @@ for i in allCombs:
             cFiles.append(os.path.join(targFolder, fPath[x]))
             
     # get metrics for classifier
-    frames = merge_frames(cFiles, baseParams.useNoiseMetrics) 
+    frames = get_feature_columns(cFiles, baseParams.useNoiseMetrics) 
     frames = pd.concat(frames[0],axis = 0)
 
     # get human labels from current recordings
-    gTruth = merge_frames(cFiles, ['group'])
+    gTruth = get_feature_columns(cFiles, ['group'])
     gTruth = pd.concat(gTruth[0],axis = 0)
     a = pd.get_dummies(gTruth['group'])
     frames['gTruth'] = a['noise']    
@@ -80,10 +101,10 @@ decoderPerf = pd.DataFrame(columns=['TruePositive', 'FalsePositive', 'TrueNegati
 for xx in fPath:
     
     xx = os.path.join(targFolder, xx)    
-    frames = merge_frames([xx], baseParams.useNoiseMetrics)
+    frames = get_feature_columns([xx], baseParams.useNoiseMetrics)
     frames = pd.concat(frames[0],axis = 0)
 
-    gTruth = merge_frames([xx], ['group'])
+    gTruth = get_feature_columns([xx], ['group'])
     gTruth = pd.concat(gTruth[0],axis = 0)
     a = pd.get_dummies(gTruth['group'])
     frames['gTruth'] = a['noise']   
@@ -111,10 +132,10 @@ for i, cComb in enumerate(allCombs):
         
     for xx in cFiles:
         
-        frames = merge_frames([xx], baseParams.useNoiseMetrics)
+        frames = get_feature_columns([xx], baseParams.useNoiseMetrics)
         frames = pd.concat(frames[0],axis = 0)
     
-        gTruth = merge_frames([xx], ['group'])
+        gTruth = get_feature_columns([xx], ['group'])
         gTruth = pd.concat(gTruth[0],axis = 0)
         a = pd.get_dummies(gTruth['group'])
         frames['gTruth'] = a['noise']
@@ -140,7 +161,7 @@ usedMetrics = embeder[1]
 usedMetrics.append('gTruth')
 
 # get default labels with ground truth
-defFrames = merge_frames([defClassifierPath + r'\orgConfigs'], usedMetrics) 
+defFrames = get_feature_columns([defClassifierPath + r'\orgConfigs'], usedMetrics) 
 defFrames = pd.concat(defFrames[0],axis = 0)
 
 
@@ -152,11 +173,11 @@ for i in allCombs:
             cFiles.append(os.path.join(targFolder, fPath[x]))
 
     # get metrics for current classifier
-    frames = merge_frames(cFiles, baseParams.useNoiseMetrics) 
+    frames = get_feature_columns(cFiles, baseParams.useNoiseMetrics) 
     frames = pd.concat(frames[0],axis = 0)
     
     # get human labels from current recordings
-    gTruth = merge_frames(cFiles, ['group'])
+    gTruth = get_feature_columns(cFiles, ['group'])
     gTruth = pd.concat(gTruth[0],axis = 0)
     a = pd.get_dummies(gTruth['group'])
     frames['gTruth'] = a['noise']
@@ -184,10 +205,10 @@ for i, cComb in enumerate(allCombs):
         
     for xx in cFiles:
         
-        frames = merge_frames([xx], baseParams.useNoiseMetrics)
+        frames = get_feature_columns([xx], baseParams.useNoiseMetrics)
         frames = pd.concat(frames[0],axis = 0)
     
-        gTruth = merge_frames([xx], ['group'])
+        gTruth = get_feature_columns([xx], ['group'])
         gTruth = pd.concat(gTruth[0],axis = 0)
         a = pd.get_dummies(gTruth['group'])
         frames['gTruth'] = a['noise']   
