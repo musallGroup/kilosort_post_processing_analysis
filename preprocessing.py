@@ -131,7 +131,7 @@ def remove_miss_vals(frame):
     return trans_frame
 
 
-def get_roc_metrics(frame, gTruth):
+def get_roc_metrics(frame):
     
 
     """
@@ -152,8 +152,8 @@ def get_roc_metrics(frame, gTruth):
      
     fig, ax = plt.subplots(figsize=(6, 8))
     
-    a = pd.get_dummies(gTruth['group'])
-    frame['gTruth'] = a['noise']  
+   # a = pd.get_dummies(gTruth['group'])
+   # frame['gTruth'] = a['noise']  
 
     roc_aucs = []
     for column in frame.columns:
