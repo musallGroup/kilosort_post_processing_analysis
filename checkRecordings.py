@@ -25,8 +25,41 @@ for i, path in enumerate(folderCheck):
     if os.path.isfile(os.path.join(targFolder,path,'cluster_group.tsv')):
         fPath.append(path)
 
+    
+#%% Add Combine all
+trans_frames = {}
+array_length = len(fPath)
 
-#%% add in ROC analysis here to get ROCS from each recording
+for i in range(array_length):
+    print("=====================", i)
+    baseParams.useNoiseMetrics = list(set(baseParams.useNoiseMetrics))
+    frames = get_feature_columns([os.path.join(targFolder,fPath[i])], baseParams.get_QMetrics) # get metrics from recording
+    gTruth = get_feature_columns([os.path.join(targFolder,fPath[i])], ['group']) 
+    
+    frame = frames[0][0]
+    gTruth = gTruth[0][0]
+    print("=====================")
+    
+    trans_frames[i] = frame
+
+    a = pd.get_dummies(gTruth['group'])
+    trans_frames[i]['gTruth'] = a['noise']
+
+df_list = [ v for k,v in trans_frames.items()] 
+df = pd.concat(df_list ,axis=0)
+trans_df = remove_miss_vals(df)
+auc_vals_frame = get_roc_metrics(trans_df)
+
+keep_cols =  np.where((auc_vals_frame.roc_auc_val > 0.59) | (auc_vals_frame.roc_auc_val < 0.41))[0].tolist() # get metric with high AUC values 
+metrics_names = trans_df.columns[keep_cols].values
+metrics_names = np.append(metrics_names,'gTruth')
+metrics_df = pd.DataFrame(trans_df, columns = metrics_names)
+
+classifierPath = r'Y:\invivo_ephys\SharedEphys\FromFermino\new_clf'
+identify_best_estimator(metrics_df, baseParams.useNoiseMetrics,classifierPath) # re-train classifier
+
+
+#%% individual frames
 auc_frames = {}
 auc_features ={}
 array_length = len(fPath)
@@ -50,8 +83,10 @@ for i in range(array_length):
     auc_frames[i] = metrics_df
     auc_features[i] = metrics_names
     
-        
-   
+    a = pd.get_dummies(gTruth['group'])
+    auc_frames[i]['gTruth'] = a['noise']
+
+
 #%%   
 # compute possible logical combinations for classifiers
 allCombs = [str(np.zeros(len(fPath)))]*pow(2,len(fPath))
