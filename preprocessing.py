@@ -89,9 +89,12 @@ def get_feature_columns(paths_all, useMetrics):
                     print('in file:')
                     print(file)
                     
+                    
                 if len(foundMetrics) > 0:
-                    frame = frame[frame.columns.intersection(foundMetrics)]
                     searchMetrics = set(searchMetrics).symmetric_difference(foundMetrics)
+                    foundMetrics.add('cluster_id') # keep cluster_ID
+                    frame = frame[frame.columns.intersection(foundMetrics)]
+                    
                 else:
                     frame = []
                 
@@ -99,7 +102,12 @@ def get_feature_columns(paths_all, useMetrics):
                 if len(recFrames) == 0:
                     recFrames = frame
                 else:
-                    recFrames = pd.concat([recFrames,frame],axis = 1)
+                    clusterIDs = pd.concat([frame['cluster_id'], recFrames['cluster_id']],axis = 0) #merge all cluster_ids
+                    clusterIDs = pd.DataFrame(np.sort(np.unique(clusterIDs)), columns = ['cluster_id'])
+                    
+                    recFrames = clusterIDs.merge(recFrames, how = 'left', on = 'cluster_id')        
+                    recFrames = recFrames.merge(frame, how = 'left', on = 'cluster_id')        
+
                  
         frames[i] = recFrames
         missedMetrics[i] = searchMetrics
