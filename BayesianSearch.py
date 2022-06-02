@@ -20,102 +20,27 @@ import pickle
 import json
 import os
 import inspect
+import numpy as np
+
+from funcs_to_use import get_classifiers_and_params, get_preprocessing_umap_pipeline, get_supervised_embedder
 
 seed=1
 # CASH (Combined Algorithm Selection and Hyperparameter optimisation)
-                   
-# define search space, you can  add your own models 
-clfs = {
-        'AdaBoostClassifier' : AdaBoostClassifier(random_state=seed),
-        # 'GradientBoostingClassifier' :GradientBoostingClassifier(random_state=seed),
-        'RandomForestClassifier' :RandomForestClassifier(random_state=seed,n_jobs=-1),
-        'KNeighborsClassifier': KNeighborsClassifier(n_jobs=-1),
-        # 'SVC': SVC(random_state=seed,probability=True),
-        # 'MLPClassifier' :MLPClassifier(random_state=seed, max_iter=300,hidden_layer_sizes= (50, 100)),
-        'ExtraTreesClassifier' : ExtraTreesClassifier(n_estimators=100, random_state=0),
-        # 'XGBClassifier' : XGBClassifier(n_estimators=100, random_state=0),
-        # 'LGBMClassifier' : LGBMClassifier(random_state=0)
-}
-models =  list(clfs.keys())
-# models = [ 'AdaBoostClassifier',
-#            'GradientBoostingClassifier',
-#            'RandomForestClassifier',
-#            'KNeighborsClassifier',
-#            'SVC',
-#            'MLPClassifier',
-#            'ExtraTreesClassifier',
-#            'XGBClassifier',
-#            'LGBMClassifier'] 
-          
-params = {
-            'AdaBoostClassifier':{'learning_rate':[1,2], 
-                       'n_estimators':[50,100],
-                       'algorithm':['SAMME','SAMME.R']
-                       },#AdaB
-    
-            'GradientBoostingClassifier':{'learning_rate':[0.05,0.1],
-                       'n_estimators':[100,150], 
-                       'max_depth':[2,4],
-                       'min_samples_split':[2,4],
-                       'min_samples_leaf': [2,4]
-                       }, #GBC
-    
-            'RandomForestClassifier':{'n_estimators':[100,150],
-                       'criterion':['gini','entropy'],
-                       'min_samples_split':[2,4],
-                       'min_samples_leaf': [2,4]
-                       }, #RFC
-    
-            'KNeighborsClassifier':{'n_neighbors':[20,50], 
-                       'weights':['distance','uniform'],
-                       'leaf_size':[30]
-                       }, #KNN
-    
-            'SVC': {'C':[0.5,2.5],
-                       'kernel':['sigmoid','linear','poly','rbf']
-                       }, #SVC
-            
-            'MLPClassifier': {
-                         'activation': ['tanh', 'relu'],
-                         'solver': ['sgd', 'adam'],
-                         'alpha': [0.0001, 0.05],
-                         'learning_rate': ['constant','adaptive']
-                         }, #MLP
-    
-            'ExtraTreesClassifier':{'criterion':['gini', 'entropy'],  
-                       'class_weight':['balanced', 'balanced_subsample']
-                       }, #extratrees
-    
-             'XGBClassifier':{'max_depth':[2,4], 
-                       'eta': [0.2,0.5], 
-                       'sampling_method':['uniform','gradient_based'],
-                       'grow_policy':['depthwise', 'lossguide']
-                      }, #xgboost
-                        
-    
-            'LGBMClassifier':{'learning_rate':[0.05,0.15],
-                       'n_estimators': [100,150]} #lightgbm
-    
-         }
+clfs, models, params = get_classifiers_and_params(seed=seed)
+
 # run search with given dataset        
 def run_search(preprocessing_pipeline, X, y, classifierPath):
     print('performing bayesian search for best classifier')
 
     X_train, X_test, y_train, y_test = train_test_split(X, y) #(train and validate on 75%, test on 25% of data)
-    X_train_transform = preprocessing_pipeline.fit_transform(X_train)
     
-    supervised_embedder = umap.UMAP(
-    min_dist=0.0, 
-    n_neighbors=10, 
-    n_components=2, # dimensions 
-    random_state=42)
-    X_train_final = supervised_embedder.fit_transform(X_train_transform, y=y_train)
-    X_test_trans = preprocessing_pipeline.transform(X_test) #to impute and normalise
-    X_test_final = supervised_embedder.transform(X_test_trans)
+    preprocess_umap_pipeline = get_preprocessing_umap_pipeline(seed)
+    X_train_final = preprocess_umap_pipeline.fit_transform(X_train, y=y_train)
+    X_test_final = preprocess_umap_pipeline.transform(X_test)
 
     usedMetrics = list(X.columns)
     # cPath = os.path.dirname(inspect.getfile(run_search)); # find directory of this function and save pickle files there
-    pickle.dump([supervised_embedder, usedMetrics], open(classifierPath + '\crossVal_embedder.sav', 'wb'))
+    pickle.dump([preprocess_umap_pipeline, usedMetrics], open(classifierPath + '\crossVal_embedder.sav', 'wb'))
 
     # time passes
     test_scores = []

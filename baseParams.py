@@ -36,7 +36,8 @@ noiseParams = {
 
 
 # quality metrics to be used for noise classifier
-get_QMetrics = [ 'Amplitude',
+def get_QMetrics():
+    return [ 'Amplitude',
                    'amplitude_cutoff',
                    'ContamPct',
                    'cumulative_drift',
@@ -61,8 +62,7 @@ get_QMetrics = [ 'Amplitude',
                    'syncSpace_8',
                    'farSyncSpike_8', 
                    'nearSyncSpike_8',
-                   
-           
+      
                 'nn_hit_rate',
                 'nn_miss_rate',
                 'max_drift',
@@ -81,3 +81,27 @@ useNoiseMetrics = [
                    'cumulative_drift'
  ]
     
+AUC_Metrics_fermino = ['ContamPct',
+ 'firing_rate',
+ 'presence_ratio',
+ 'isi_viol',
+ 'amplitude_cutoff',
+ 'isolation_distance',
+ 'l_ratio',
+ 'd_prime',
+ 'nn_hit_rate',
+ 'nn_miss_rate',
+ 'silhouette_score',
+ 'max_drift',
+ 'cumulative_drift',
+ 'syncSpike_2',
+ 'syncSpace_2',
+ 'farSyncSpike_2',
+ 'nearSyncSpike_2',
+ 'syncSpike_4',
+ 'syncSpace_4',
+ 'farSyncSpike_4',
+ 'nearSyncSpike_4',
+ 'syncSpike_8',
+ 'farSyncSpike_8',
+ 'nearSyncSpike_8']
