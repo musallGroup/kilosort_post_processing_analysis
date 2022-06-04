@@ -322,34 +322,3 @@ def predict_with_fitted_pipeline(dataframe, fitted_clf, metrics_trained_on):
     y_preds = fitted_clf.predict(dataframe)
     y_probs = fitted_clf.predict_proba(dataframe)
     return y_preds,y_probs
-    
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

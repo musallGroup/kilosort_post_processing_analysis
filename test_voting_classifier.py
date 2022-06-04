@@ -46,8 +46,6 @@ keep_data_frames, leave_out_dfs = get_leave_one_out_frame(file_paths,strict_metr
 X_train, y_train = split_data_to_X_y(keep_data_frames[0])
 X_test, y_test = split_data_to_X_y(leave_out_dfs[0])
 
-#%%
-
 preprocess_umap_pipeline = get_preprocessing_umap_pipeline(seed)
 kfold = StratifiedKFold(n_splits=CV_SPLITS, shuffle=True, random_state=seed)
 
@@ -60,8 +58,8 @@ clf_best_estimators = get_clf_best_estimators_list(
 )
 
 classifiers = create_models_for_voting_clfs(X_train, y_train, preprocess_umap_pipeline,clf_best_estimators,copy.deepcopy(kfold), seed)
-#%%
-print(len(classifiers))
+
+print("number of classifier models generated : " , len(classifiers))
 
 y_preds, y_probs = predict_using_voting_clf(classifiers, X_test, y_test)
 
