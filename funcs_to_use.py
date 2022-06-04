@@ -7,6 +7,7 @@ Created on Mon May 30 14:01:18 2022
 
 import copy
 from itertools import filterfalse
+from typing import NamedTuple
 
 import pandas as pd 
 
@@ -277,26 +278,49 @@ def plot_cm(y_true,y_pred, title):
     plt.show()
 
 
-def fit_with_fitted_pipeline(X,y,fitted_pipeline):
+class ClassificationPerformanceConfusionMatrix(NamedTuple):
+    true_positive_rate: int
+    false_positive_rate: int
+    true_negative_rate: int
+    false_negative_rate: int
+    total_performance: int
+
+def calculate_confusion_matrix(test_dataframe):
+    # confusionMatrix = pd.DataFrame(columns=['TruePositive', 'FalsePositive', 'TrueNegative', 'FalseNegative', 'TotalPerf'])
+
+    #true positive (correctly recognized noise clusters)    
+    true_positive_rate = np.sum((test_dataframe['is_noise'] == 1) & (test_dataframe['gTruth'] == 1)) / len(test_dataframe['gTruth'])
+    
+    #false alarm rate (percent falsely labeled neural clusters)    
+    false_positive_rate = np.sum((test_dataframe['is_noise'] == 1) & (test_dataframe['gTruth'] == 0)) / len(test_dataframe['gTruth'])
  
-    X, y = shuffle(X, y, random_state=0)
-    #kfold = StratifiedKFold(n_splits=8, shuffle = True,random_state = 42)
-    sm = SMOTE(random_state=42)
-    #ad list to test sizes
-    X_train, X_test, y_train, y_test =train_test_split(X, y, test_size=0.3, random_state=0, stratify=y)
+    #true negative (correctly recognized neural clusters)    
+    true_negative_rate = np.sum((test_dataframe['is_noise'] == 0) & (test_dataframe['gTruth'] == 0)) / len(test_dataframe['gTruth'])
+    
+    #false negatove (missed noise clusters)    
+    false_negative_rate = np.sum((test_dataframe['is_noise'] == 0) & (test_dataframe['gTruth'] == 1)) / len(test_dataframe['gTruth'])
+ 
+    #total performance    
+    total_performance = np.round(np.sum(test_dataframe['is_noise'] == test_dataframe['gTruth']) / len(test_dataframe['gTruth']), 2)
+    return ClassificationPerformanceConfusionMatrix(
+        true_positive_rate=true_positive_rate,
+        false_positive_rate=false_positive_rate,
+        true_negative_rate=true_negative_rate,
+        false_negative_rate=false_negative_rate,
+        total_performance=total_performance
+        )
 
 
-    X_train_res, y_train_res = sm.fit_resample(X_train, y_train)
-
+def fit_with_fitted_pipeline(X, y, fitted_pipeline, seed):
+    X_train_res, y_train_res = get_smote_resampled(X, y, seed)
     fitted_clf  = fitted_pipeline.fit(X_train_res, y_train_res)
     return fitted_clf
 
-def predict_with_fitted_clf(dataframe,fitted_clf,metrics_trained_on):
+def predict_with_fitted_pipeline(dataframe, fitted_clf, metrics_trained_on):
     dataframe = remove_miss_vals(dataframe)
     dataframe = dataframe[metrics_trained_on]
     y_preds = fitted_clf.predict(dataframe)
     y_probs = fitted_clf.predict_proba(dataframe)
-    
     return y_preds,y_probs
     
 

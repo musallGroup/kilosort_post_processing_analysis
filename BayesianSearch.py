@@ -24,13 +24,12 @@ import numpy as np
 
 from funcs_to_use import get_classifiers_and_params, get_preprocessing_umap_pipeline, get_supervised_embedder
 
-seed=1
-# CASH (Combined Algorithm Selection and Hyperparameter optimisation)
-clfs, models, params = get_classifiers_and_params(seed=seed)
 
 # run search with given dataset        
-def run_search(preprocessing_pipeline, X, y, classifierPath):
-    print('performing bayesian search for best classifier')
+def run_search(X, y, classifierPath, seed):
+    print('performing bayesian search for finding the best classifier configuration')
+    # CASH (Combined Algorithm Selection and Hyperparameter optimisation)
+    clfs, models, params = get_classifiers_and_params(seed=seed)
 
     X_train, X_test, y_train, y_test = train_test_split(X, y) #(train and validate on 75%, test on 25% of data)
     

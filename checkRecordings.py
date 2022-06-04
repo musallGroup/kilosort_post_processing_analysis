@@ -51,40 +51,15 @@ trans_df = remove_miss_vals(df)
 auc_vals_frame = get_roc_metrics(trans_df)
 
 keep_cols =  np.where((auc_vals_frame.roc_auc_val > 0.59) | (auc_vals_frame.roc_auc_val < 0.41))[0].tolist() # get metric with high AUC values 
-metrics_names = trans_df.columns[keep_cols].values
-metrics_names = np.append(metrics_names,'gTruth')
+metrics_names = trans_df.columns[keep_cols].values # added to baseParams.AUC_Metrics_fermino
+baseParams.AUC_Metrics_fermino.append(metrics_names)
+
+#metrics_names = np.append(metrics_names,'gTruth')
 metrics_df = pd.DataFrame(trans_df, columns = metrics_names)
 
 classifierPath = r'Y:\invivo_ephys\SharedEphys\FromFermino\new_clf'
 identify_best_estimator(metrics_df, baseParams.useNoiseMetrics,classifierPath) # re-train classifier
 
-
-#%% individual frames
-auc_frames = {}
-auc_features ={}
-array_length = len(fPath)
-
-for i in range(array_length):
-    print("=====================", i)
-    baseParams.useNoiseMetrics = list(set(baseParams.useNoiseMetrics))
-    frames = get_feature_columns([os.path.join(targFolder,fPath[i])], baseParams.useNoiseMetrics) # get metrics from recording
-    gTruth = get_feature_columns([os.path.join(targFolder,fPath[i])], ['group']) 
-    
-    frame = frames[0][0]
-    gTruth = gTruth[0][0]
-    print("=====================")
-    trans_frame = remove_miss_vals(frame)
-    auc_vals_frame = get_roc_metrics(trans_frame, gTruth)
-        
-    keep_cols =  np.where((auc_vals_frame.roc_auc_val > 0.59) | (auc_vals_frame.roc_auc_val < 0.41))[0].tolist() # get metric with high AUC values 
-    metrics_names = trans_frame.columns[keep_cols].values
-    metrics_df = pd.DataFrame(trans_frame, columns = metrics_names)
-   
-    auc_frames[i] = metrics_df
-    auc_features[i] = metrics_names
-    
-    a = pd.get_dummies(gTruth['group'])
-    auc_frames[i]['gTruth'] = a['noise']
 
 
 #%%   
@@ -103,19 +78,22 @@ for i in range(pow(2,len(fPath))):
 allCombs = allCombs[1:] #dont use first case
             
 #%% train all classifiers from scratch
-if os.path.isdir(targFolder + r'\crossRefClassifiers') == False:
-    os.mkdir(targFolder + r'\crossRefClassifiers')
+if os.path.isdir(targFolder + r'\crossRefClassifiers_AJ') == False:
+    os.mkdir(targFolder + r'\crossRefClassifiers_AJ')
     
     
 for i in allCombs:
-    
+    print ('====================', i)
     cFiles = []
     for x in range(len(i)):
         if i[x] == 1:
             cFiles.append(os.path.join(targFolder, fPath[x]))
             
     # get metrics for classifier
-    frames = get_feature_columns(cFiles, baseParams.useNoiseMetrics) 
+    #frames = get_feature_columns(cFiles, baseParams.useNoiseMetrics) 
+    frames = get_feature_columns(cFiles,baseParams.AUC_Metrics_fermino)
+    frames[0][0].replace([np.inf, -np.inf], np.nan, inplace=True)
+    
     frames = pd.concat(frames[0],axis = 0)
 
     # get human labels from current recordings
@@ -125,9 +103,9 @@ for i in allCombs:
     frames['gTruth'] = a['noise']    
     
     # train new classifier and save
-    classifierPath = os.path.join(targFolder, 'crossRefClassifiers', 'Clf_' + str(i))
-    identify_best_estimator(frames, baseParams.useNoiseMetrics, classifierPath) # re-train classifier
-
+    classifierPath = os.path.join(targFolder, 'crossRefClassifiers_AJ', 'Clf_' + str(i))
+    #identify_best_estimator(frames, baseParams.useNoiseMetrics, classifierPath) # re-train classifier
+    identify_best_estimator(frames,baseParams.AUC_Metrics_fermino, classifierPath)
 
 #%% test all classifiers
 decoderPerf = pd.DataFrame(columns=['TruePositive', 'FalsePositive', 'TrueNegative', 'FalseNegative', 'TotalPerf', 'trainedRecs'])
