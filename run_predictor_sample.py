@@ -6,7 +6,7 @@
 #cell 0 
 import os
 import pickle
-from BayesianSearch import clfs, run_search
+from BayesianSearch import clfs, identify_best_estimator
 from preprocessing import create_preprocessing_pipeline
 import umap
 from mlxtend.plotting import plot_decision_regions
@@ -21,6 +21,35 @@ from funcs_to_use import (
     split_data_to_X_y
 )
 #%% load path cell1
+    
+def run_predictor(test_dataframe, exp_dir):
+# This applies the decoder to a given data table. Needs to include the metrics
+# that the classifier was trained on.
+
+    # cPath = os.path.dirname(inspect.getfile(run_predictor)); # find directory of this function and save pickle files there
+    clf = pickle.load(open(exp_dir + 'classifier.pkl', 'rb'))
+    used_metrics  = pickle.load(open(os.path.join(exp_dir, 'strict_metrics.pkl'), 'rb'))
+
+    # check if all metrics are present
+    foundMetrics = set(used_metrics) & set(list(test_dataframe.columns))
+    if len(foundMetrics) != len(used_metrics):
+        print('Missing metrics in dataset:')
+        print(set(test_dataframe.columns).symmetric_difference(set(used_metrics)))
+        raise ValueError('!! Columns in test dataset do not contain all required metrics !!') 
+
+    X_unseen = test_dataframe[used_metrics]    
+    y_pred = clf.predict(X_unseen) #for every row \
+    y_prob  = clf.predict_proba(X_unseen)
+
+    test_dataframe['is_noise']=y_pred
+    test_dataframe['noise_probs']=y_prob[:1]
+
+    # fig = plot_decision_regions(X=X_test_final, y=y_pred, clf=clf, legend=2)
+    # # plt.savefig('decision-boundary.png')
+    # plt.show()
+    
+    return y_pred, y_prob
+
 
 def train_best_estimator(X, y, classifierPath, seed):
 # this uses the classifier that has been previously identified as performing
@@ -46,33 +75,7 @@ def train_best_estimator(X, y, classifierPath, seed):
     pickle.dump(used_metrics, open(classifierPath + '\used_metrics.sav','wb'))
     pickle.dump(clf, open(classifierPath + '\classifier.sav', 'wb'))
    
-    
-def run_predictor(test_dataframe, classifierPath):
-# This applies the decoder to a given data table. Needs to include the metrics
-# that the classifier was trained on.
 
-    # cPath = os.path.dirname(inspect.getfile(run_predictor)); # find directory of this function and save pickle files there
-    clf = pickle.load(open(classifierPath + '\classifier.sav', 'rb'))
-    pipeline = pickle.load(open(classifierPath + '\preprocess_umap_pipeline.sav', 'rb'))
-    used_metrics = pickle.load(open(classifierPath + '\used_metrics.sav', 'rb'))
-
-    # check if all metrics are present
-    foundMetrics = set(used_metrics) & set(list(test_dataframe.columns))
-    if len(foundMetrics) != len(used_metrics):
-        print('Missing metrics in dataset:')
-        print(set(test_dataframe.columns).symmetric_difference(set(used_metrics)))
-        raise ValueError('!! Columns in test dataset do not contain all required metrics !!') 
-
-    X_unseen = test_dataframe[used_metrics]    
-    X_test_final = pipeline.transform(X_unseen) #to impute and normalise and umap embed
-    
-    y_pred = clf.predict(X_test_final) #for every row 
-    test_dataframe['is_noise']=y_pred
-    fig = plot_decision_regions(X=X_test_final, y=y_pred, clf=clf, legend=2)
-    # plt.savefig('decision-boundary.png')
-    plt.show()
-    
-    return test_dataframe['is_noise']
 
 def test_predictor(test_dataframe, classifierPath):
 # This tests  the decoder to a given data table that has human labels. 
@@ -103,32 +106,6 @@ def test_predictor(test_dataframe, classifierPath):
     confusion_matrix = calculate_confusion_matrix(test_dataframe)
         
     return test_dataframe['is_noise'], confusion_matrix
-
-
-def identify_best_estimator(dataset, metrics, classifierPath, seed):
-# this performs a new bayesian search to identify the best classifier in UMAP
-# space. This is useful when retraining on a new flavor of data.
-
-    # check if all metrics are present
-    foundMetrics = set(metrics) & set(list(dataset.columns))
-    if len(foundMetrics) != len(metrics):
-        print('Missing metrics in dataset:')
-        print(set(dataset.columns).symmetric_difference(set(metrics)))
-        raise ValueError('!! Columns in dataset do not contain all required metrics !!')
-    
-    X, y = split_data_to_X_y(dataset)
-    y = dataset['gTruth'].values #gTruth are the manual labels that are used for training
-    X = dataset[dataset.columns.intersection(metrics)]    
-    
-    # make sure not to use cluster_id as a metric
-    if len(set(X.columns).intersection(set(['cluster_id']))) > 0:
-        del X['cluster_id']
-        
-    if os.path.isdir(classifierPath) == False:
-        os.mkdir(classifierPath)
-            
-    run_search(X, y, classifierPath, seed) # call function 
-    train_best_estimator(X, y, classifierPath, seed)
 
 
 #%%

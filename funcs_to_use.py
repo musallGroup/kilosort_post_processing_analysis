@@ -6,7 +6,9 @@ Created on Mon May 30 14:01:18 2022
 """
 
 import copy
+from functools import partial
 from itertools import filterfalse
+import os
 from typing import NamedTuple
 
 import pandas as pd 
@@ -15,7 +17,7 @@ import matplotlib.pyplot as plt
 
 import numpy as np
 
-import umap
+import umap.umap_ as umap
 
 import seaborn as sns
 
@@ -113,31 +115,11 @@ def get_merged_df_from_path_ids(file_paths, strict_metrics, path_ids):
 
     return metrics_frames_merged
 
-def get_clf_best_estimators_list(X, y, preprocess_umap_pipeline: BaseEstimator, kfold, seed):
-    "Using BayesSearchCV"
 
-    clfs, models, params = get_classifiers_and_params(seed)
-   
-    X_res, y_res = get_smote_resampled(X, y, seed)
-
-    X_transformed= preprocess_umap_pipeline.fit_transform(X_res)
-
-    #del clf_best_estimators
-    clf_best_estimators = []
-      
-    # run search for each model 
-    for name in models:
-        print(name)
-        # add print statements
-        estimator = clfs[name]
-        clf = BayesSearchCV(estimator, params[name], scoring='accuracy', refit='True', n_jobs=-1, n_iter=20, cv=kfold) 
-        clf.fit(X_transformed, y_res)   # X_train_final, y_train X is train samples and y is the corresponding labels
-        
-        print("best estimator " +  str(clf.best_estimator_))
-        print("best params: " + str(clf.best_params_))
-        clf_best_estimators.append(clf.best_estimator_)
-
-    return clf_best_estimators
+def params_to_estimator(params, name):
+    clfs, _, _ = get_classifiers_and_params()
+    estimator = clfs[name](**params)
+    return estimator
 
 
 def get_supervised_embedder(seed):
@@ -146,7 +128,7 @@ def get_supervised_embedder(seed):
 
 
 def get_preprocessing_umap_pipeline(seed):
-    preprocessing_pipeline = create_preprocessing_pipeline()
+    preprocessing_pipeline = create_preprocessing_pipeline(seed)
 
     supervised_embedder = get_supervised_embedder(seed)
 
@@ -158,20 +140,19 @@ def get_preprocessing_umap_pipeline(seed):
     return preprocess_umap_pipeline
 
 
-def get_classifiers_and_params(seed):
+def get_classifiers_and_params():
     clfs = {
-            'AdaBoostClassifier' : AdaBoostClassifier(random_state=seed),
-            'GradientBoostingClassifier' :GradientBoostingClassifier(random_state=seed),
-            'RandomForestClassifier' :RandomForestClassifier(random_state=seed,n_jobs=-1),
-            'KNeighborsClassifier': KNeighborsClassifier(n_jobs=-1),
-            'SVC': SVC(random_state=seed,probability=True),
-            'MLPClassifier' :MLPClassifier(random_state=seed, max_iter=300,hidden_layer_sizes= (50, 100)),
-            'ExtraTreesClassifier' : ExtraTreesClassifier(n_estimators=100, random_state=seed),
-            'XGBClassifier' : XGBClassifier(n_estimators=100, random_state=seed,use_label_encoder=False),
-            'LGBMClassifier' : LGBMClassifier(random_state=seed)
+            'AdaBoostClassifier': AdaBoostClassifier,
+            'GradientBoostingClassifier': GradientBoostingClassifier,
+            'RandomForestClassifier': RandomForestClassifier,
+            'KNeighborsClassifier': KNeighborsClassifier,
+            #'SVC': SVC,
+            'MLPClassifier': MLPClassifier,
+            'ExtraTreesClassifier': ExtraTreesClassifier,
+            'XGBClassifier': partial(XGBClassifier, use_label_encoder=False),
+            'LGBMClassifier': LGBMClassifier,
     }
     models =  list(clfs.keys())
-
               
     params = {
                 'AdaBoostClassifier':{'learning_rate':[1,2], 
@@ -193,9 +174,11 @@ def get_classifiers_and_params(seed):
                            'weights':['distance','uniform'],
                            'leaf_size':[30]
                            }, #KNN
-                'SVC': {'C':[0.5,2.5],
-                           'kernel':['sigmoid','linear','poly','rbf']
-                           }, #SVC
+                'SVC': {
+                        'C': [0.5,2.5],
+                        'kernel': ['sigmoid','linear','rbf'],
+                        'probability': [True]
+                        }, #SVC
                 'MLPClassifier': {
                              'activation': ['tanh', 'relu'],
                              'solver': ['sgd', 'adam'],
@@ -224,22 +207,24 @@ def get_nulls(training, testing):
     print(pd.isnull(testing).sum())
 
 
-def create_models_for_voting_clfs(X,y,preprocess_umap_pipeline,clf_best_estimators,kfold, seed):
- 
-    X_res, y_res = get_smote_resampled(X, y, seed)
+def create_models_for_voting_clfs(X,y,preprocess_pipeline,clf_best_estimators,seed,kfold): #kfold=None
     classifiers = []
 
     for classifier in clf_best_estimators:
         clf_pipeline = Pipeline([
-            ('pre-umap', preprocess_umap_pipeline),
+            ('pre-umap', preprocess_pipeline),
             ('estimator', classifier)])
         
-        for i, (train_index, _) in enumerate(kfold.split(X_res, y_res)):
-            X_train_in = X_res.iloc[train_index]
-            y_train_in = y_res.iloc[train_index]
-            print("running estimator : " , classifier )
-            print("running split : ", i )
-            fitted_clf  = clf_pipeline.fit(X_train_in,y_train_in)
+        if kfold is not None:
+            for i, (train_index, _) in enumerate(kfold.split(X, y)):
+                X_train_in = X.iloc[train_index]
+                y_train_in = y.iloc[train_index]
+                print("running estimator : " , classifier )
+                print("running split : ", i )
+                fitted_clf  = clf_pipeline.fit(X_train_in,y_train_in)
+                classifiers.append(copy.deepcopy(fitted_clf))
+        else:
+            fitted_clf  = clf_pipeline.fit(X,y)
             classifiers.append(copy.deepcopy(fitted_clf))
 
     return classifiers
@@ -254,18 +239,14 @@ def get_smote_resampled(X, y, seed):
 
 #def predict_voting_clfs_output(X,y,pipeline_config,clf_best_estimators,kfold):
 
-def predict_using_voting_clf(classifiers, X_test, y_test):
+def predict_using_voting_clf(eclf, X_test, y_test):
 
-    eclf = VotingClassifier(estimators= None, voting='soft',n_jobs=-1)
-    eclf.estimators_ = classifiers
-    eclf.le_ = LabelEncoder().fit(y_test) #https://stackoverflow.com/questions/42920148/using-sklearn-voting-ensemble-with-partial-fit/54610569#54610569
-    eclf.classes = eclf.le_.classes_
     y_preds = eclf.predict(X_test) 
     y_probs = eclf.predict_proba(X_test)
     
     return y_preds, y_probs
 
-def plot_cm(y_true,y_pred, title):
+def plot_cm(y_true,y_pred, title,exp_dir):
     cm = confusion_matrix(y_true, y_pred, labels=None)
     ax= plt.subplot()
     sns.heatmap(cm, annot=True, fmt='g', ax=ax,cmap='Blues');  #annot=True to annotate cells, ftm='g' to disable scientific notation
@@ -273,9 +254,8 @@ def plot_cm(y_true,y_pred, title):
     ax.set_xlabel('Predicted labels');ax.set_ylabel('True labels'); 
     ax.set_title(f'Confusion Matrix from {title}'); 
     ax.xaxis.set_ticklabels(['Neural', 'Noise']); ax.yaxis.set_ticklabels(['Neural', 'Noise']);
-    #plt.savefig('Confusion Matrix from classifier (SUA).pdf') 
-    
-    plt.show()
+    plt.savefig(os.path.join(exp_dir, f"confusion_matrix_{title}")) 
+    #plt.show()
 
 
 class ClassificationPerformanceConfusionMatrix(NamedTuple):
@@ -311,9 +291,8 @@ def calculate_confusion_matrix(test_dataframe):
         )
 
 
-def fit_with_fitted_pipeline(X, y, fitted_pipeline, seed):
-    X_train_res, y_train_res = get_smote_resampled(X, y, seed)
-    fitted_clf  = fitted_pipeline.fit(X_train_res, y_train_res)
+def fit_with_fitted_pipeline(X, y, fitted_pipeline):
+    fitted_clf  = fitted_pipeline.fit(X, y)
     return fitted_clf
 
 def predict_with_fitted_pipeline(dataframe, fitted_clf, metrics_trained_on):

@@ -273,11 +273,10 @@ def get_groundTruth(frame):
     return(df_i)
 
 
-def create_preprocessing_pipeline():
+def create_preprocessing_pipeline(seed):
     preprocessing_pipeline = Pipeline([
         ('impute', SimpleImputer(missing_values=np.nan, strategy='median')),
         ('scaler', StandardScaler())
-        #('umap-embedder', umap.UMAP(min_dist=0.0, n_neighbors=30, n_components=2,random_state=4 ))
         ])
     return preprocessing_pipeline
 
