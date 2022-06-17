@@ -22,7 +22,7 @@ import os
 import inspect
 import numpy as np
 
-from funcs_to_use import get_classifiers_and_params, get_preprocessing_umap_pipeline, get_smote_resampled, get_supervised_embedder, params_to_estimator
+from funcs_to_use import get_classifiers_and_params,  params_to_estimator
 from preprocessing import create_preprocessing_pipeline
 
 def get_clf_best_estimators_per_model_family(

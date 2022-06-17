@@ -49,16 +49,38 @@ from preprocessing import get_feature_columns,remove_miss_vals,get_roc_metrics, 
 import baseParams
 
 def split_data_to_X_y(data):
-    X = data.drop(['gTruth','cluster_id'], axis=1)
+    """
+    Splits the data into X : dataframe with feature columns
+                         y : dataframe with labels for supervised learning 
+
+    Inputs:
+    ------------------------------
+    data : dataframe with quality metrics
+
+    Output:
+    -------------------------------
+    Returns two dataframes X and y  
+    
+    """
     y = data['gTruth'] 
+    if 'gTruth' in data.columns:
+        data.drop(['gTruth'],axis = 1,inplace=True)
+    if 'cluster_id' in data.columns:
+        data.drop(['cluster_id'],axis = 1,inplace=True)
+    X = data
+    
     return X, y
 
 
 def metrics_to_use(file_paths):
-    "Use this function on the all the recordings given in fPath"
-    "to find quality metrics in metrics_params with ROC-AUC values"
-    
-    "output is the quality metrics used for training"
+    """
+    Use this function on the all the recordings given in file_paths
+    to find quality metrics given in metrics_params with ROC-AUC values
+    output is the quality metrics used for training.
+
+
+
+    """
     frames = get_feature_columns(file_paths, baseParams.get_QMetrics()) 
     gTruths = get_feature_columns(file_paths, ['group']) 
 
@@ -81,6 +103,17 @@ def metrics_to_use(file_paths):
 
 def get_leave_one_out_frame(file_paths,strict_metrics):
     """
+    Takes the recordings given in file_paths and gives different combinations of train and test datasets.
+
+    Inputs:
+    ------------------------------
+    file_paths : paths to datasets with quality metrics (derived from spike sorter outputs)
+    strict_mettrics : quality metrics needed (derived from metrics_to_use())
+
+    Output:
+    -------------------------------
+    keep_data_frames : training datasets
+    leave_out_dfs : test datasets
 
     """
     keep_data_frames = []
@@ -207,7 +240,7 @@ def get_nulls(training, testing):
     print(pd.isnull(testing).sum())
 
 
-def create_models_for_voting_clfs(X,y,preprocess_pipeline,clf_best_estimators,seed,kfold): #kfold=None
+def create_models_for_voting_clfs(X,y,preprocess_pipeline,clf_best_estimators,kfold,seed ): #kfold=None
     classifiers = []
 
     for classifier in clf_best_estimators:

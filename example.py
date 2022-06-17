@@ -9,6 +9,7 @@ import random
 import argparse
 
 import numpy as np
+from pyrsistent import s
 from sklearn.model_selection import StratifiedKFold
 
 from funcs_to_use import (
@@ -69,9 +70,9 @@ def main(seed=764,
 
         run_func = run_voting_classifier if use_voting_classifier else run_best_estimator
         y_pred, y_prob = run_func(
-            X_train=X_train,
+            X_train=X_train[strict_metrics],
             y_train=y_train,
-            X_test=X_test,
+            X_test=X_test[strict_metrics],
             y_test=y_test,
             preprocess_pipeline=preprocess_pipeline,
             kfold=kfold,
@@ -114,7 +115,7 @@ parser.add_argument(
 parser.add_argument(
     '--use_voting_classifier',
     type=bool,
-    default=False)
+    default=True)
 args = parser.parse_args()
 options = vars(args) #option is a dictionary of args
 print(options)

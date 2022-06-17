@@ -23,7 +23,7 @@ def run_best_estimator(
     X_train,
     y_train,
     X_test,
-    y_test,
+   # y_test,
     preprocess_pipeline,
     kfold,
     seed,
@@ -54,4 +54,4 @@ def run_best_estimator(
     
     pickle.dump(fitted_clf, open(os.path.join(exp_dir, 'classifier.pkl'), 'wb'))
     pickle.dump(strict_metrics, open(os.path.join(exp_dir, 'strict_metrics.pkl'), 'wb'))
-    return y_pred, y_prob
+    return y_pred, y_prob, X_test
