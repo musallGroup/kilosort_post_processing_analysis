@@ -38,3 +38,6 @@ statsmodels==0.13.1
 umap-learn==0.5.2
 xgboost==1.5.1
 pyupset
+neo
+elephant
+imblearn

@@ -9,6 +9,7 @@ fPath = r'D:\SharedEcephys\FromFerimos\TestData\Kilosort2_2021-10-06_000401'
 # fPath = r'D:\test'
 
 import os
+import sys
 import logging
 import time
 import numpy as np
@@ -23,15 +24,16 @@ import matplotlib.pyplot as plt
 from sklearn import metrics
 
 import baseParams
-baseParams.QMparams['quality_metrics_output_file'] = fPath + r'\metrics.csv'
-baseParams.noiseParams['classifier_path'] = os.path.abspath(os.getcwd()) + r'\rf_classifier.pkl'
-baseParams.noiseParams['noise_templates_output_file'] = fPath + r'\noiseModule.csv'
+baseParams.QMparams['quality_metrics_output_file'] = os.path.join(fPath, 'metrics.csv')
+baseParams.noiseParams['classifier_path'] = os.path.join(os.path.abspath(os.getcwd()), 'rf_classifier.pkl')
+baseParams.noiseParams['noise_templates_output_file'] = os.path.join(fPath, 'noiseModule.csv')
 
 # import QMparams
 
 os.chdir(fPath)
+sys.path.insert(0, fPath)
 import params
-  
+baseParams.QMparams['sample_rate'] = params.sample_rate
 
 start = time.time()
 

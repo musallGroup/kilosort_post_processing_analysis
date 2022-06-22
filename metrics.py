@@ -15,6 +15,10 @@ from scipy.ndimage.filters import gaussian_filter1d
 from epoch import Epoch
 from utils import printProgressBar, get_spike_depths
 
+import neo
+from elephant.spike_train_synchrony import Synchrotool
+import quantities as pq
+
 
 
 def calculate_metrics(spike_times,
@@ -73,6 +77,11 @@ def calculate_metrics(spike_times,
     for epoch in epochs:
 
         in_epoch = (spike_times > epoch.start_time) * (spike_times < epoch.end_time)
+
+        print("Calculating synchrony metrics")
+        synchrony_metrics = calculate_synchrony_metrics(spike_times[in_epoch],
+                                                        spike_clusters[in_epoch],
+                                                        params['sample_rate'])
 
         print("Calculating isi violations")
         isi_viol = calculate_isi_violations(spike_times[in_epoch], spike_clusters[in_epoch], total_units, params['isi_threshold'], params['min_isi'])
@@ -214,6 +223,20 @@ def calculate_firing_rate(spike_times, spike_clusters, total_units):
                                         max_time = np.max(spike_times))
 
     return firing_rates
+
+
+def calculate_synchrony_metrics(spike_times, spike_clusters, sampling_rate):
+    t_stop = spike_times.max() * pq.s + 1 * pq.ms
+    spiketrains = neo.core.spiketrainlist.SpikeTrainList.from_spike_time_array(spike_times,
+                                                                               spike_clusters,
+                                                                               np.unique(spike_clusters),
+                                                                               t_stop=t_stop,
+                                                                               units=pq.s)
+    spiketrains._spiketrains_from_array()
+    synchrotool = Synchrotool(spiketrains, sampling_rate*pq.Hz)
+    synchrotool.annotate_synchrofacts()
+    breakpoint()
+
 
 
 def calculate_amplitude_cutoff(spike_clusters, amplitudes, total_units):
