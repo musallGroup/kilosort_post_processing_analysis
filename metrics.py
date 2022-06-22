@@ -15,6 +15,10 @@ from scipy.ndimage.filters import gaussian_filter1d
 from epoch import Epoch
 from utils import printProgressBar, get_spike_depths
 
+import neo
+from elephant.spike_train_synchrony import Synchrotool
+import quantities as pq
+
 
 
 def calculate_metrics(spike_times,
@@ -50,6 +54,8 @@ def calculate_metrics(spike_times,
         contains information on Epoch start and stop times
     params : dict of parameters
         'isi_threshold' : minimum time for isi violations
+        'sample_rate' : sampling rate of the recording
+        'synchrony_sizes' : sizes of synchronous events to consider for synchrony metrics
 
 
     Outputs:
@@ -73,6 +79,12 @@ def calculate_metrics(spike_times,
     for epoch in epochs:
 
         in_epoch = (spike_times > epoch.start_time) * (spike_times < epoch.end_time)
+
+        print("Calculating synchrony metrics")
+        synchrony_metrics = calculate_synchrony_metrics(spike_times[in_epoch],
+                                                        spike_clusters[in_epoch],
+                                                        params['sample_rate'],
+                                                        params['synchrony_sizes'])
 
         print("Calculating isi violations")
         isi_viol = calculate_isi_violations(spike_times[in_epoch], spike_clusters[in_epoch], total_units, params['isi_threshold'], params['min_isi'])
@@ -137,8 +149,9 @@ def calculate_metrics(spike_times,
                                 ('silhouette_score', the_silhouette_score),
                                 ('max_drift', max_drift),
                                 ('cumulative_drift', cumulative_drift),
-                                ('epoch_name' , epoch_name),
-                                )))))
+                                ('epoch_name' , epoch_name)),
+                                **synchrony_metrics
+                                ))))
 
         else:
             metrics = pd.concat((metrics, pd.DataFrame(data= OrderedDict((('cluster_id', cluster_ids),
@@ -146,8 +159,9 @@ def calculate_metrics(spike_times,
                                 ('presence_ratio' , presence_ratio),
                                 ('isi_viol' , isi_viol),
                                 ('amplitude_cutoff' , amplitude_cutoff),
-                                ('epoch_name' , epoch_name),
-                                )))))
+                                ('epoch_name' , epoch_name)),
+                                **synchrony_metrics
+                                ))))
 
     return metrics
 
@@ -214,6 +228,30 @@ def calculate_firing_rate(spike_times, spike_clusters, total_units):
                                         max_time = np.max(spike_times))
 
     return firing_rates
+
+
+def calculate_synchrony_metrics(spike_times, spike_clusters, sampling_rate, synchrony_sizes):
+    t_stop = spike_times.max() * pq.s + 1 * pq.ms
+    spiketrains = neo.core.spiketrainlist.SpikeTrainList.from_spike_time_array(spike_times,
+                                                                               spike_clusters,
+                                                                               np.unique(spike_clusters),
+                                                                               t_stop=t_stop,
+                                                                               units=pq.s)
+    spiketrains._spiketrains_from_array()
+    synchrotool = Synchrotool(spiketrains, sampling_rate*pq.Hz)
+    synchrotool.annotate_synchrofacts()
+
+    spike_counts = np.array([len(st) for st in spiketrains])
+    spike_counts[spike_counts == 0] = 1 # avoid division by zero, for zero spikes we want metric = 0
+
+    synchrony_metrics = {}
+    for synchrony_size in synchrony_sizes:
+        current_metric = [np.count_nonzero(st.array_annotations['complexity'] >= synchrony_size)
+                          for st in spiketrains]
+        current_metric = np.array(current_metric) / spike_counts
+        synchrony_metrics[f'syncSpike_{synchrony_size}'] = current_metric
+
+    return synchrony_metrics
 
 
 def calculate_amplitude_cutoff(spike_clusters, amplitudes, total_units):

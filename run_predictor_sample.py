@@ -6,7 +6,7 @@
 #cell 0 
 import os
 import pickle
-from BayesianSearch import clfs, identify_best_estimator
+from BayesianSearch import identify_best_estimator
 from preprocessing import create_preprocessing_pipeline
 import umap
 from mlxtend.plotting import plot_decision_regions
@@ -17,6 +17,7 @@ import numpy as np
 import pandas as pd
 from funcs_to_use import (
     calculate_confusion_matrix,
+    get_classifiers_and_params,
     get_preprocessing_umap_pipeline,
     split_data_to_X_y
 )
@@ -65,15 +66,16 @@ def train_best_estimator(X, y, classifierPath, seed):
     X_train_final = preprocess_umap_pipeline.fit_transform(X, y)
     
     # cPath = os.path.dirname(inspect.getfile(train_best_estimator)); # find directory of this function and save pickle files there
-    config = json.load(open(classifierPath + '\incumbent_config.json'))
+    config = json.load(open(os.path.join(classifierPath, 'incumbent_config.json')))
+    clfs, _, _ = get_classifiers_and_params()
     clf = clfs[config['estimator']]
     params = config['params']
     clf.set_params(**params)
     clf.fit(X_train_final,y)
 
-    pickle.dump(preprocess_umap_pipeline, open(classifierPath + '\preprocess_umap_pipeline.sav','wb'))
-    pickle.dump(used_metrics, open(classifierPath + '\used_metrics.sav','wb'))
-    pickle.dump(clf, open(classifierPath + '\classifier.sav', 'wb'))
+    pickle.dump(preprocess_umap_pipeline, open(classifierPath + 'preprocess_umap_pipeline.sav', 'wb'))
+    pickle.dump(used_metrics, open(os.path.join(classifierPath, 'used_metrics.sav'), 'wb'))
+    pickle.dump(clf, open(os.path.join(classifierPath, 'classifier.sav'), 'wb'))
    
 
 
@@ -82,9 +84,9 @@ def test_predictor(test_dataframe, classifierPath):
 # Needs to include the metrics that the classifier was trained on.
 
     # cPath = os.path.dirname(inspect.getfile(run_predictor)); # find directory of this function and save pickle files there
-    clf = pickle.load(open(classifierPath + '\classifier.sav', 'rb'))
-    pipeline = pickle.load(open(classifierPath + '\preprocess_umap_pipeline.sav', 'rb'))
-    used_metrics = pickle.load(open(classifierPath + '\used_metrics.sav', 'rb'))
+    clf = pickle.load(open(os.path.join(classifierPath, 'classifier.sav'), 'rb'))
+    pipeline = pickle.load(open(os.path.join(classifierPath, 'preprocess_umap_pipeline.sav'), 'rb'))
+    used_metrics = pickle.load(open(os.path.join(classifierPath, 'used_metrics.sav'), 'rb'))
 
     # check if all metrics are present
     foundMetrics = set(used_metrics) & set(list(test_dataframe.columns))
