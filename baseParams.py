@@ -1,6 +1,7 @@
 # settings for quality metric module
 QMparams = {'isi_threshold': 0.0015,
     'min_isi': 0.000166,
+    'synchrony_sizes': [2, 4, 8],
     'num_channels_to_compare': 13,
     'max_spikes_for_unit': 500,
     'max_spikes_for_nn': 10000,
